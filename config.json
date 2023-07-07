@@ -1,0 +1,10 @@
+{
+    "database": {
+      "name": "autoapi_prueba",
+      "user": "root",
+      "password": "",
+      "host": "localhost",
+      "dialect": "mysql"
+    }
+  }
+  
