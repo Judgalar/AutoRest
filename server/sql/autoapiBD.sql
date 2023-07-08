@@ -1,0 +1,20 @@
+DROP DATABASE IF EXISTS autoapi;
+CREATE DATABASE autoapi;
+
+use autoapi;
+
+CREATE TABLE users (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    password VARCHAR(255) NOT NULL,
+    salt VARCHAR(255) NOT NULL
+);
+
+CREATE TABLE tokens (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    token VARCHAR(255) NOT NULL,
+    userId INT NOT NULL,
+    createdAt DATETIME,
+    updatedAt DATETIME,
+    FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE
+);
