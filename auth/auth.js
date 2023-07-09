@@ -78,7 +78,7 @@ router.post('/token', async (req, res) => {
     }
 
     // Generar un token JWT
-    const token = jwt.sign({ id: usuario.id }, 'secreto', { expiresIn: '1h' });
+    const token = jwt.sign({ id: usuario.id }, 'secreto');
 
     // Guardar el token en la base de datos
     await tokens.create({ token, userId: usuario.id });
