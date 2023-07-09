@@ -1,2 +1,3 @@
-/server/node_modules
-/server/models
+node_modules
+models
+swagger.json

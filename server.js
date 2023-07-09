@@ -2,6 +2,7 @@ const express = require('express');
 const { readdirSync, readFileSync } = require('fs');
 const { join } = require('path');
 const { Sequelize } = require('sequelize');
+const swaggerUI = require('swagger-ui-express');
 
 
 const configPath = './config.json';
@@ -16,22 +17,53 @@ const sequelize = new Sequelize(name, user, password, {
     dialect
 });
 
+// MIDDLEWARE
+//Proporciona configuraciones de seguridad para proteger tu aplicación de diversas vulnerabilidades web, como ataques de inyección, secuencias de comandos entre sitios (XSS) y falsificación de solicitudes entre sitios (CSRF).
+const helmet = require('helmet');
+app.use(helmet());
+
+//Permite solicitudes de origen cruzado (Cross-Origin Resource Sharing) y te ayuda a controlar las políticas de acceso a tu API.
+const cors = require('cors');
+app.use(cors());
+
+//Comprime las respuestas enviadas desde el servidor para reducir el tamaño de los datos transferidos y mejorar el rendimiento.
+const compression = require('compression');
+app.use(compression());
+
+//Registra los registros de solicitud HTTP para ayudarte a depurar y monitorear tus solicitudes entrantes
+const morgan = require('morgan');
+app.use(morgan('dev'));
+
+// Middleware para análisis de JSON y URL-encoded
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+//Analiza y administra las cookies de las solicitudes
+const cookieParser = require('cookie-parser');
+app.use(cookieParser());
+
+// Middleware para registro de solicitudes
+app.use((req, res, next) => {
+    console.log('Solicitud recibida:', req.method, req.url);
+    next();
+});
+
+
 const modelsPath = join(__dirname, 'models');
 const modelFiles = readdirSync(modelsPath);
 
-
-// Importa los modelos dinámicamente
+// Importa los modelos dinámicamente y agrega las rutas al objeto de configuración
 modelFiles.forEach((file) => {
     const model = require(join(modelsPath, file))(sequelize, Sequelize.DataTypes);
     // Asume que cada archivo de modelo exporta una función que recibe el objeto Sequelize y los DataTypes como argumentos y devuelve el modelo definido
     const modelName = model.name; // Nombre del modelo (asumimos que el modelo tiene una propiedad "name")
 
+
     //RUTAS 
-    // Ruta para obtener todos los registros en formato JSON 
-    app.get(`/${modelName}`, async (req, res) => {
+    // Ruta para obtener todos los registros 
+    app.get(`/${modelName}`, async (_req, res) => {
         try {
             const data = await model.findAll();
-            const format = req.query.format; // Obtén el parámetro 'format' de la consulta
             res.json(data);
 
         } catch (error) {
@@ -40,12 +72,11 @@ modelFiles.forEach((file) => {
         }
     });
 
-    // Ruta para obtener un registro por su ID en formato JSON 
+    // Ruta para obtener un registro por su ID 
     app.get(`/${modelName}/:id`, async (req, res) => {
         try {
             const { id } = req.params;
             const registro = await model.findByPk(id);
-            const format = req.query.format; // Obtén el parámetro 'format' de la consulta
 
             if (!registro) {
                 res.status(404).json({ error: `${modelName} no encontrado` });
@@ -85,14 +116,19 @@ modelFiles.forEach((file) => {
             } else {
                 await model.update(updatedData, { where: { id } });
 
-                res.json({ message: `${modelName} actualizado correctamente` });
+                const updatedRegistro = await model.findByPk(id); // Obtener el registro actualizado desde la base de datos
 
+                res.json({
+                    message: `${modelName} actualizado correctamente`,
+                    registro: updatedRegistro, // Agregar el registro actualizado en la respuesta
+                });
             }
         } catch (error) {
             console.error(`Error al actualizar ${modelName}:`, error);
             res.status(500).json({ error: `Error al actualizar ${modelName}` });
         }
     });
+
 
     // Ruta para actualizar parcialmente un registro en el modelo
     app.patch(`/${modelName}/:id`, async (req, res) => {
@@ -135,48 +171,22 @@ modelFiles.forEach((file) => {
         }
     });
 
-
 });
 
-// MIDDLEWARE
-//Proporciona configuraciones de seguridad para proteger tu aplicación de diversas vulnerabilidades web, como ataques de inyección, secuencias de comandos entre sitios (XSS) y falsificación de solicitudes entre sitios (CSRF).
-const helmet = require('helmet');
-app.use(helmet());
-
-//Permite solicitudes de origen cruzado (Cross-Origin Resource Sharing) y te ayuda a controlar las políticas de acceso a tu API.
-const cors = require('cors');
-app.use(cors());
-
-//Comprime las respuestas enviadas desde el servidor para reducir el tamaño de los datos transferidos y mejorar el rendimiento.
-const compression = require('compression');
-app.use(compression());
-
-//Registra los registros de solicitud HTTP para ayudarte a depurar y monitorear tus solicitudes entrantes
-const morgan = require('morgan');
-app.use(morgan('dev'));
-
-// Middleware para análisis de JSON y URL-encoded
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-
-//Analiza y administra las cookies de las solicitudes
-const cookieParser = require('cookie-parser');
-app.use(cookieParser());
-
-// Middleware para registro de solicitudes
-app.use((req, res, next) => {
-    console.log('Solicitud recibida:', req.method, req.url);
-    next();
-});
-
-// Middleware para manejar la solicitud de /favicon.ico
-app.get('/favicon.ico', (req, res) => {
-    res.status(204).end();
-});
 
 const authRoutes = require('./auth/auth');
 app.use('/auth', authRoutes);
 
+
+const swaggerDocument = require('./swagger.json')
+
+// Configurar Swagger UI
+app.use('/', swaggerUI.serve, swaggerUI.setup(swaggerDocument));
+// Ruta para acceder al archivo JSON de Swagger
+app.get('/swagger.json', (req, res) => {
+    res.setHeader('Content-Type', 'application/json');
+    res.send(swaggerDocument);
+});
 
 app.listen(port, () => {
     console.log(`Servidor iniciado en el puerto ${port}`);
