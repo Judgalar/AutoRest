@@ -3,6 +3,7 @@ const { readdirSync, readFileSync } = require('fs');
 const { join } = require('path');
 const { Sequelize } = require('sequelize');
 const swaggerUI = require('swagger-ui-express');
+const chalk = require('chalk')
 
 
 const configPath = './config.json';
@@ -178,7 +179,7 @@ const authRoutes = require('./auth/auth');
 app.use('/auth', authRoutes);
 
 
-const swaggerDocument = require('./swagger.json')
+const swaggerDocument = require('./swagger.json');
 
 // Configurar Swagger UI
 app.use('/', swaggerUI.serve, swaggerUI.setup(swaggerDocument));
@@ -189,5 +190,5 @@ app.get('/swagger.json', (req, res) => {
 });
 
 app.listen(port, () => {
-    console.log(`Servidor iniciado en el puerto ${port}`);
+    console.log(chalk.yellow(`Servidor iniciado en el puerto ${port}`));
 });

@@ -1,10 +1,9 @@
 {
     "database": {
-      "name": "jardineria",
-      "user": "root",
-      "password": "",
-      "host": "localhost",
-      "dialect": "mysql"
+        "name": "autoapi_prueba",
+        "user": "root",
+        "password": "",
+        "host": "localhost",
+        "dialect": "mysql"
     }
-  }
-  
+}
