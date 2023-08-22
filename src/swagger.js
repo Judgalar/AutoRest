@@ -4,14 +4,15 @@ const fs = require('fs')
 const { Sequelize } = require('sequelize')
 const pc = require('picocolors')
 
-// Rutas de archivos y configuraciones
-const configPath = './config.json'
-const swaggerFilePath = './swagger.json'
-const endpointsFiles = ['./server.js']
+const { port } = require('./api/constants.js')
 
-// Cargar configuración de la base de datos
-const configData = fs.readFileSync(configPath, 'utf-8')
-const config = JSON.parse(configData)
+// Rutas de archivos y configuraciones
+const swaggerFilePath = join(__dirname, 'api', 'swagger.json')
+const serverFilePath = join(__dirname, 'api', 'server.js')
+const endpointsFiles = [serverFilePath]
+
+// Cargar configuración
+const config = require('./config.json')
 const { name, user, password, host, dialect } = config.database
 
 // Crear instancia de Sequelize para la conexión a la base de datos
@@ -21,19 +22,19 @@ const sequelize = new Sequelize(name, user, password, {
 })
 
 // Obtener lista de archivos de modelos
-const modelsPath = join(__dirname, 'models')
+const modelsPath = join(__dirname, 'api', 'models')
 const modelFiles = fs.readdirSync(modelsPath)
 
 // Definir la información del documento Swagger
 const doc = {
   info: {
-    title: 'REST API',
+    title: `${config.database.name}`,
     description: 'API REST generada automáticamente',
     version: '1.0.0'
   },
   servers: [
     {
-      url: 'http://localhost:3000',
+      url: `http://localhost:${port}`,
       description: 'Servidor local'
     }
   ],
@@ -66,7 +67,6 @@ swaggerAutogen(swaggerFilePath, endpointsFiles, doc)
           const attribute = modelAttributes[attrName]
           modelSchema.properties[attrName] = {
             type: attribute.type.key.toLowerCase()
-            // Puedes agregar más detalles según el tipo de atributo si lo deseas, como minLength, maxLength, format, etc.
           }
         }
 

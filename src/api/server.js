@@ -1,16 +1,16 @@
 const express = require('express')
-const { readdirSync, readFileSync } = require('fs')
+const { readdirSync } = require('fs')
 const { join } = require('path')
 const { Sequelize } = require('sequelize')
 const swaggerUI = require('swagger-ui-express')
 const pc = require('picocolors')
 
-const configPath = './config.json'
-const config = JSON.parse(readFileSync(configPath, 'utf-8'))
+const { port } = require('./constants.js')
+
+const config = require('../config.json')
 const { name, user, password, host, dialect } = config.database
 
 const app = express()
-const port = process.env.PORT || 3000
 
 const sequelize = new Sequelize(name, user, password, {
   host,
@@ -164,7 +164,7 @@ modelFiles.forEach((file) => {
   })
 })
 
-const authRoutes = require('./auth/auth')
+const authRoutes = require('../auth/auth')
 app.use('/auth', authRoutes)
 
 const swaggerDocument = require('./swagger.json')

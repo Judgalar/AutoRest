@@ -1,7 +1,7 @@
 const express = require('express')
 const crypto = require('node:crypto')
 const jwt = require('jsonwebtoken')
-const { sequelizeAuth, users, tokens } = require('./models')
+const { users, tokens } = require('./models')
 
 const router = express.Router()
 
@@ -23,7 +23,7 @@ router.post('/registro', async (req, res) => {
     const hash = crypto.pbkdf2Sync(password, salt, 10000, 64, 'sha512').toString('hex')
 
     // Crear un nuevo usuario
-    const nuevoUsuario = await users.create({ name, password: hash, salt })
+    await users.create({ name, password: hash, salt })
 
     res.json({ mensaje: 'Usuario registrado correctamente' })
   } catch (error) {

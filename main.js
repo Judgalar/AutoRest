@@ -5,12 +5,14 @@ const pc = require('picocolors')
 
 const args = process.argv.slice(2)
 
-const modelsDirectory = path.join(__dirname, 'models')
-const swaggerFile = path.join(__dirname, 'swagger.json')
+const modelsDirectory = path.join(__dirname, 'src', 'api', 'models')
+const swaggerFile = path.join(__dirname, 'src', 'api', 'swagger.json')
+const generateModelsFile = path.join(__dirname, 'src', 'generateModels.js')
+const generateSwaggerFile = path.join(__dirname, 'src', 'swagger.js')
 
 function generateModels () {
   return new Promise((resolve, reject) => {
-    exec('node generateModels.js', (error, stdout, stderr) => {
+    exec(`node ${generateModelsFile}`, (error, stdout) => {
       if (error) {
         reject(new Error(`Error ejecutando generateModels.js: ${error.message}`))
       } else {
@@ -23,7 +25,7 @@ function generateModels () {
 
 function generateSwagger () {
   return new Promise((resolve, reject) => {
-    exec('node swagger.js', (error, stdout, stderr) => {
+    exec(`node ${generateSwaggerFile}`, (error, stdout) => {
       if (error) {
         reject(new Error(`Error ejecutando swagger.js: ${error.message}`))
       } else {
@@ -56,11 +58,11 @@ async function startServer () {
   }
 
   // Iniciar el servidor
-  require('./server')
+  require('./src/api/server.js')
 }
 
 if (args.includes('--config') || args.includes('-c')) {
-  const modifyConfig = require('./modifyConfig')
+  const modifyConfig = require('./src/modifyConfig')
 
   modifyConfig(async () => {
     try {

@@ -6,7 +6,7 @@
         "host": "localhost",
         "dialect": "mysql"
     },
-    "auto": {
+    "autoModels": {
         "caseModel": "camel",
         "caseFile": "pascal",
         "additional": {
