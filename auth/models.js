@@ -1,10 +1,11 @@
-const { Sequelize, DataTypes } = require('sequelize');
+const { Sequelize, DataTypes } = require('sequelize')
+const pc = require('picocolors')
 
 // Configuración de la conexión a la base de datos
 const sequelizeAuth = new Sequelize('autoapi', 'root', '', {
   host: 'localhost',
   dialect: 'mysql'
-});
+})
 
 // Definición del modelo users
 const users = sequelizeAuth.define('users', {
@@ -27,7 +28,7 @@ const users = sequelizeAuth.define('users', {
   }
 }, {
   timestamps: false // Desactivar las columnas "createdAt" y "updatedAt"
-});
+})
 
 // Definición del modelo Token
 const tokens = sequelizeAuth.define('tokens', {
@@ -44,19 +45,19 @@ const tokens = sequelizeAuth.define('tokens', {
     type: DataTypes.INTEGER,
     allowNull: false
   }
-});
+})
 
 // Establecer las relaciones entre los modelos
-users.hasMany(tokens, { onDelete: 'CASCADE' });
-tokens.belongsTo(users);
+users.hasMany(tokens, { onDelete: 'CASCADE' })
+tokens.belongsTo(users)
 
 // Sincronizar los modelos con la base de datos
 sequelizeAuth.sync()
   .then(() => {
-    console.log('Modelos sincronizados correctamente');
+    console.log(pc.green('Modelos sincronizados correctamente'))
   })
   .catch((error) => {
-    console.error('Error al sincronizar modelos:', error);
-  });
+    console.error('Error al sincronizar modelos:', error)
+  })
 
-module.exports = { sequelizeAuth, users, tokens };
+module.exports = { sequelizeAuth, users, tokens }
