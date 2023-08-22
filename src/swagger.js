@@ -1,10 +1,10 @@
 const swaggerAutogen = require('swagger-autogen')({ openapi: '3.1.0' })
 const { join } = require('path')
 const fs = require('fs')
-const { Sequelize } = require('sequelize')
 const pc = require('picocolors')
 
 const { port } = require('./api/constants.js')
+const { Sequelize, sqlConnection } = require('./api/sqlConnection.js')
 
 // Rutas de archivos y configuraciones
 const swaggerFilePath = join(__dirname, 'api', 'swagger.json')
@@ -13,13 +13,6 @@ const endpointsFiles = [serverFilePath]
 
 // Cargar configuración
 const config = require('./config.json')
-const { name, user, password, host, dialect } = config.database
-
-// Crear instancia de Sequelize para la conexión a la base de datos
-const sequelize = new Sequelize(name, user, password, {
-  host,
-  dialect
-})
 
 // Obtener lista de archivos de modelos
 const modelsPath = join(__dirname, 'api', 'models')
@@ -53,7 +46,7 @@ swaggerAutogen(swaggerFilePath, endpointsFiles, doc)
 
     // Agregar rutas para cada modelo
     modelFiles.forEach((file) => {
-      const model = require(join(modelsPath, file))(sequelize, Sequelize.DataTypes)
+      const model = require(join(modelsPath, file))(sqlConnection, Sequelize.DataTypes)
       const modelName = model.name
       if (modelName !== undefined) {
         // Generar el esquema del modelo dinámicamente
