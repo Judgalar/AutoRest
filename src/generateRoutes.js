@@ -1,12 +1,22 @@
-const { readdirSync } = require('node:fs')
+const fs = require('node:fs')
 const { join } = require('node:path')
-const pc = require('picocolors')
 
 const { createFile } = require('./utils/createFile.js')
 const { Sequelize, sqlConnection } = require('./api/sqlConnection.js')
 
 const modelsPath = join(__dirname, 'api', 'models')
-const modelFiles = readdirSync(modelsPath)
+const modelFiles = fs.readdirSync(modelsPath)
+
+const routesDirectory = join(__dirname, 'api', 'routes')
+
+if (fs.existsSync(routesDirectory)) {
+  try {
+    fs.rmdirSync(routesDirectory, { recursive: true })
+    console.log(`Directorio ${routesDirectory} eliminado con éxito.`)
+  } catch (err) {
+    console.error(`Error al eliminar el directorio: ${err.message}`)
+  }
+} else fs.mkdirSync(routesDirectory, { recursive: true })
 
 // Importa los modelos dinámicamente y agrega las rutas al objeto de configuración
 modelFiles.forEach((file) => {
@@ -127,5 +137,3 @@ module.exports = router
 
   createFile(RoutesPath, fileName, content)
 })
-
-console.log(pc.green('Rutas generadas correctamente'))

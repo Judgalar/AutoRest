@@ -3,6 +3,8 @@ const { exec } = require('child_process')
 const path = require('path')
 const pc = require('picocolors')
 
+const { sqlConnection } = require('./src/api/sqlConnection')
+
 const args = process.argv.slice(2)
 
 const modelsDirectory = path.join(__dirname, 'src', 'api', 'models')
@@ -11,6 +13,8 @@ const swaggerFile = path.join(__dirname, 'src', 'api', 'swagger.json')
 const generateModelsFile = path.join(__dirname, 'src', 'generateModels.js')
 const generateSwaggerFile = path.join(__dirname, 'src', 'swagger.js')
 const generateRoutesFile = path.join(__dirname, 'src', 'generateRoutes.js')
+
+const modifyConfigFilePath = path.join(__dirname, 'src', 'modifyConfig.js')
 
 function generateModels () {
   return new Promise((resolve, reject) => {
@@ -51,7 +55,42 @@ function generateSwagger () {
   })
 }
 
+function deleteModels () {
+  if (fs.existsSync(modelsDirectory)) {
+    try {
+      fs.rmSync(modelsDirectory, { recursive: true })
+      console.log(`Directorio ${modelsDirectory} eliminado con éxito.`)
+    } catch (err) {
+      console.error(`Error al eliminar el directorio: ${err.message}`)
+    }
+  }
+}
+
+function deleteRoutes () {
+  if (fs.existsSync(routesDirectory)) {
+    try {
+      fs.rmSync(routesDirectory, { recursive: true })
+      console.log(`Directorio ${routesDirectory} eliminado con éxito.`)
+    } catch (err) {
+      console.error(`Error al eliminar el directorio: ${err.message}`)
+    }
+  }
+}
+
+function deleteSwagger () {
+  if (fs.existsSync(swaggerFile)) {
+    try {
+      fs.rmSync(swaggerFile)
+      console.log(`Fichero ${swaggerFile} eliminado con éxito.`)
+    } catch (err) {
+      console.error(`Error al eliminar el fichero: ${err.message}`)
+    }
+  }
+}
+
 async function startServer () {
+  await sqlConnection.authenticate()
+
   if (!fs.existsSync(modelsDirectory)) {
     console.log(pc.blue('Directorio models no encontrado. Generando modelos...'))
     try {
@@ -94,14 +133,13 @@ async function startServer () {
 }
 
 if (args.includes('--config') || args.includes('-c')) {
-  const modifyConfig = require('./src/modifyConfig')
+  const modifyConfig = require(modifyConfigFilePath)
 
   modifyConfig(async () => {
     try {
-      await generateModels()
-      await generateSwagger()
-
-      startServer()
+      deleteModels()
+      deleteRoutes()
+      deleteSwagger()
     } catch (error) {
       console.error(error)
       process.exit(1)

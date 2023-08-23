@@ -7,7 +7,7 @@ const rl = readline.createInterface({
   output: process.stdout
 })
 
-const configPath = 'config.json'
+const configPath = path.join(__dirname, 'config.json')
 
 async function clearFiles () { // Borra la carpeta 'models' y el swagger.json si existen
   const modelsDirectory = path.join(__dirname, 'models')
