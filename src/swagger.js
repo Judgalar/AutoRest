@@ -131,7 +131,7 @@ swaggerAutogen(swaggerFilePath, endpointsFiles, doc)
                 required: true,
                 description: 'ID del registro',
                 schema: {
-                  type: 'integer'
+                  type: 'string'
                 }
               }
             ],
@@ -164,7 +164,7 @@ swaggerAutogen(swaggerFilePath, endpointsFiles, doc)
                 required: true,
                 description: 'ID del registro',
                 schema: {
-                  type: 'integer'
+                  type: 'string'
                 }
               }
             ],
@@ -200,7 +200,7 @@ swaggerAutogen(swaggerFilePath, endpointsFiles, doc)
                 required: true,
                 description: 'ID del registro',
                 schema: {
-                  type: 'integer'
+                  type: 'string'
                 }
               }
             ],
@@ -236,7 +236,7 @@ swaggerAutogen(swaggerFilePath, endpointsFiles, doc)
                 required: true,
                 description: 'ID del registro',
                 schema: {
-                  type: 'integer'
+                  type: 'string'
                 }
               }
             ],

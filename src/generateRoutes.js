@@ -1,5 +1,6 @@
-const { readdirSync } = require('fs')
-const { join } = require('path')
+const { readdirSync } = require('node:fs')
+const { join } = require('node:path')
+const pc = require('picocolors')
 
 const { createFile } = require('./utils/createFile.js')
 const { Sequelize, sqlConnection } = require('./api/sqlConnection.js')
@@ -126,3 +127,5 @@ module.exports = router
 
   createFile(RoutesPath, fileName, content)
 })
+
+console.log(pc.green('Rutas generadas correctamente'))
