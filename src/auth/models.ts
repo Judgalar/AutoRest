@@ -1,5 +1,5 @@
-const { Sequelize, DataTypes } = require('sequelize')
-const pc = require('picocolors')
+import { Sequelize, DataTypes } from 'sequelize'
+import pc from 'picocolors'
 
 // Configuración de la conexión a la base de datos
 const sequelizeAuth = new Sequelize('autoapi', 'root', '', {
@@ -60,4 +60,4 @@ sequelizeAuth.sync()
     console.error('Error al sincronizar modelos:', error)
   })
 
-module.exports = { sequelizeAuth, users, tokens }
+export { sequelizeAuth, users, tokens }

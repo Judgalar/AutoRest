@@ -1,7 +1,7 @@
-const fs = require('fs')
-const path = require('path')
+import fs from 'node:fs'
+import path from 'path'
 
-function createFile (directoryPath, fileName, content) {
+export default function createFile (directoryPath: string, fileName: string, content: string): void {
   const filePath = path.join(directoryPath, fileName)
 
   // Crear el directorio si no existe
@@ -14,5 +14,3 @@ function createFile (directoryPath, fileName, content) {
 
   console.log(`Archivo ${fileName} creado en ${directoryPath}`)
 }
-
-module.exports = { createFile }

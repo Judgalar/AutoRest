@@ -1,34 +1,33 @@
-const fs = require('node:fs')
-const { join } = require('node:path')
+import fs from 'node:fs'
+import path from 'node:path'
+import { fileURLToPath } from 'url'
 
-const { createFile } = require('./utils/createFile.js')
-const { Sequelize, sqlConnection } = require('./api/sqlConnection.js')
+import createFile from './utils/createFile.js'
+const filename = fileURLToPath(import.meta.url)
+const dirname = path.dirname(filename)
 
-const modelsPath = join(__dirname, 'api', 'models')
-const modelFiles = fs.readdirSync(modelsPath)
+const modelsPath = path.join(dirname, 'models')
+const routesDirectory = path.join(dirname, 'routes')
 
-const routesDirectory = join(__dirname, 'api', 'routes')
+export default async function generateRoutes (): Promise<void> {
+  if (fs.existsSync(routesDirectory)) {
+    fs.rmSync(routesDirectory, { recursive: true })
+  } else fs.mkdirSync(routesDirectory, { recursive: true })
 
-if (fs.existsSync(routesDirectory)) {
-  try {
-    fs.rmdirSync(routesDirectory, { recursive: true })
-    console.log(`Directorio ${routesDirectory} eliminado con éxito.`)
-  } catch (err) {
-    console.error(`Error al eliminar el directorio: ${err.message}`)
-  }
-} else fs.mkdirSync(routesDirectory, { recursive: true })
+  const modelFiles = fs.readdirSync(modelsPath)
+  // Importa los modelos dinámicamente y agrega las rutas al objeto de configuración
+  for (const file of modelFiles) {
+    const modulePath = `./models/${file}`
+    if (modulePath === './models/init-models.js') continue
+    const defineModelModule = await import(modulePath)
+    const defineModel = defineModelModule.default
+    const modelName: string = defineModel.name
 
-// Importa los modelos dinámicamente y agrega las rutas al objeto de configuración
-modelFiles.forEach((file) => {
-  const model = require(join(modelsPath, file))(sqlConnection, Sequelize.DataTypes)
-  // Asume que cada archivo de modelo exporta una función que recibe el objeto Sequelize y los DataTypes como argumentos y devuelve el modelo definido
-  const modelName = model.name
+    if (modelName === undefined || modelName === null || modelName === '') continue
 
-  if (!model.name) return
-
-  const content = `const express = require('express')
-const { Sequelize, sqlConnection } = require('../sqlConnection.js')
-const defineModel_${modelName} = require('../models/${modelName}') // Asegúrate de importar el modelo correcto
+    const content = `import express from 'express'
+import { Sequelize, sqlConnection } from '../sqlConnection'
+import defineModel_${modelName} from '../models/${modelName}' // Asegúrate de importar el modelo correcto
 const ${modelName} = defineModel_${modelName}(sqlConnection, Sequelize.DataTypes)
 
 const router = express.Router()
@@ -129,11 +128,13 @@ router.delete('/:id', async (req, res) => {
   }
 })
 
-module.exports = router
+export default router
+
 `
 
-  const fileName = `${modelName}.js`
-  const RoutesPath = join(__dirname, 'api', 'routes')
+    const fileName = `${modelName}.js`
+    const RoutesPath = path.join(dirname, 'routes')
 
-  createFile(RoutesPath, fileName, content)
-})
+    createFile(RoutesPath, fileName, content)
+  }
+}

@@ -5,12 +5,5 @@
         "password": "",
         "host": "localhost",
         "dialect": "mysql"
-    },
-    "autoModels": {
-        "caseModel": "camel",
-        "caseFile": "pascal",
-        "additional": {
-            "timestamps": false
-        }
     }
 }
