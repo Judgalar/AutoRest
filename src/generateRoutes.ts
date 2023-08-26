@@ -45,12 +45,14 @@ export default async function generateRoutes (): Promise<void> {
 // Genera el contenido de las rutas basado en el modelo
 function generateRoutesContent (modelName: string): string {
   return `
-  import express from 'express';
-  import * as defineModel_${modelName} from '../models/${modelName}';
+  import express from 'express'
+  import { sqlConnection } from '../sqlConnection.js'
+  import * as defineModel_${modelName} from '../models/${modelName}.js'
   
-  const ${modelName} = defineModel_${modelName}.${modelName};
+  const ${modelName}Class = defineModel_${modelName}.${modelName}
+  const ${modelName} = ${modelName}Class.initModel(sqlConnection)
   
-  const router = express.Router();
+  const router = express.Router()
   
 /**
  * @swagger
@@ -95,7 +97,7 @@ function generateRoutesContent (modelName: string): string {
 
 /**
  * @swagger
- * /clientes/{id}:
+ * /${modelName}/{id}:
  *   get:
  *     summary: Obtener un registro de ${modelName} por su ID
  *     parameters:

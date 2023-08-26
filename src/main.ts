@@ -3,23 +3,19 @@ import fs from 'fs'
 import path, { join } from 'path'
 import { fileURLToPath } from 'url'
 import swaggerUI from 'swagger-ui-express'
-import { readFile } from 'fs/promises'
 import pc from 'picocolors'
+import swaggerJsdoc from 'swagger-jsdoc'
 
-import helmet from 'helmet'
 import cors from 'cors'
 import morgan from 'morgan'
 import cookieParser from 'cookie-parser'
 import compression from 'compression'
 
 import { port } from './constants.js'
-import authRoutes from './auth/auth.js'
 import { sqlConnection } from './sqlConnection.js'
 import generarModelos from './sequelizeAutoESM.js'
 import generateRoutes from './generateRoutes.js'
-import generateSwagger from './generateSwagger.js'
-import swaggerConfig from './swaggerConfig'
-import swaggerJsdoc from 'swagger-jsdoc'
+import swaggerConfig from './swaggerConfig.js'
 
 await sqlConnection.authenticate()
 
@@ -78,46 +74,51 @@ fs.writeFileSync(outputPath, swaggerJSON)
 
 const app = express()
 
-app.use('/', swaggerUI.serve, swaggerUI.setup(specs))
+// MIDDLEWARE
 
-// // MIDDLEWARE
-// // Proporciona configuraciones de seguridad para proteger tu aplicación de diversas vulnerabilidades web, como ataques de inyección, secuencias de comandos entre sitios (XSS) y falsificación de solicitudes entre sitios (CSRF).
-// app.use(helmet())
+// Permite solicitudes de origen cruzado (Cross-Origin Resource Sharing) y te ayuda a controlar las políticas de acceso a tu API.
+app.use(cors())
 
-// // Permite solicitudes de origen cruzado (Cross-Origin Resource Sharing) y te ayuda a controlar las políticas de acceso a tu API.
-// app.use(cors())
+// Comprime las respuestas enviadas desde el servidor para reducir el tamaño de los datos transferidos y mejorar el rendimiento.
+app.use(compression())
 
-// // Comprime las respuestas enviadas desde el servidor para reducir el tamaño de los datos transferidos y mejorar el rendimiento.
-// app.use(compression())
+// Registra los registros de solicitud HTTP para ayudarte a depurar y monitorear tus solicitudes entrantes
+app.use(morgan('dev'))
 
-// // Registra los registros de solicitud HTTP para ayudarte a depurar y monitorear tus solicitudes entrantes
-// app.use(morgan('dev'))
+// Middleware para análisis de JSON y URL-encoded
+app.use(express.json())
+app.use(express.urlencoded({ extended: true }))
 
-// // Middleware para análisis de JSON y URL-encoded
-// app.use(express.json())
-// app.use(express.urlencoded({ extended: true }))
+// Analiza y administra las cookies de las solicitudes
+app.use(cookieParser())
 
-// // Analiza y administra las cookies de las solicitudes
-// app.use(cookieParser())
+// Middleware para registro de solicitudes
+app.use((req, res, next) => {
+  console.log('Solicitud recibida:', req.method, req.url)
+  next()
+})
 
-// // Middleware para registro de solicitudes
-// app.use((req, res, next) => {
-//   console.log('Solicitud recibida:', req.method, req.url)
-//   next()
-// })
-
-// const routesPath = join(dirname, 'routes')
-// const routesFiles = fs.readdirSync(routesPath)
+const routesPath = join(dirname, 'routes')
+const routesFiles = fs.readdirSync(routesPath)
 
 // const clientesRouter: Router = await import('./routes/cliente')
 // app.use('/clientes')
 
 // RUTAS DINÁMICAS
-// for (const routeFile of routesFiles) {
-//   const route = routeFile.split('.js')[0]
-//   //const router: Router = await import(`./routes/${routeFile}`)
-//   // app.use(`/${route}`, router)
-// }
+for (const routeFile of routesFiles) {
+  let routeName = ''
+
+  if (routeFile.endsWith('.ts')) {
+    routeName = routeFile.slice(0, -3)
+  } else if (routeFile.endsWith('.js')) {
+    routeName = routeFile.slice(0, -3)
+  }
+
+  const routerModule = await import(`./routes/${routeFile}`)
+  const router: Router = routerModule.default // Accede al middleware del enrutador
+  app.use(`/${routeName}`, router)
+  console.log(`/${routeName}`)
+}
 
 // app.use('/auth', authRoutes)
 
@@ -141,6 +142,8 @@ app.use('/', swaggerUI.serve, swaggerUI.setup(specs))
 //   res.setHeader('Content-Type', 'application/json')
 //   res.send(swaggerDocument)
 // })
+
+app.use('/', swaggerUI.serve, swaggerUI.setup(specs))
 
 app.listen(port, () => {
   console.log(pc.bgYellow(` Servidor iniciado en el puerto ${port} `))

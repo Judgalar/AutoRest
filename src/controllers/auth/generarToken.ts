@@ -2,7 +2,7 @@ import jwt from 'jsonwebtoken'
 import { type Request, type Response } from 'express'
 import bcrypt from 'bcrypt'
 
-import { users } from '../../auth/models'
+import { users } from '../../auth/models.js'
 
 const secretKey = 'ClaveSecreta'
 

@@ -1,7 +1,7 @@
 import express from 'express'
 
-import registroUsuario from '../controllers/auth/registroUsuario'
-import generarToken from '../controllers/auth/generarToken'
+import registroUsuario from '../controllers/auth/registroUsuario.js'
+import generarToken from '../controllers/auth/generarToken.js'
 
 const router = express.Router()
 

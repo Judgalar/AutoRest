@@ -2,7 +2,7 @@ import fs from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
 import readline from 'node:readline'
-import readJSON from './utils/readJSON'
+import readJSON from './utils/readJSON.js'
 import type { Dialect } from 'sequelize/types'
 
 const rl = readline.createInterface({

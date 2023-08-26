@@ -1,6 +1,6 @@
 import { Sequelize } from 'sequelize'
 import type { Dialect } from 'sequelize/types'
-import readJSON from './utils/readJSON'
+import readJSON from './utils/readJSON.js'
 import path from 'path'
 import { fileURLToPath } from 'url'
 
