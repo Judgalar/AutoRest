@@ -18,6 +18,8 @@ import { sqlConnection } from './sqlConnection.js'
 import generarModelos from './sequelizeAutoESM.js'
 import generateRoutes from './generateRoutes.js'
 import generateSwagger from './generateSwagger.js'
+import swaggerConfig from './swaggerConfig'
+import swaggerJsdoc from 'swagger-jsdoc'
 
 await sqlConnection.authenticate()
 
@@ -36,17 +38,17 @@ if (fs.existsSync(join(dirname, 'models'))) {
   }
 }
 
-// if (fs.existsSync(join(dirname, 'routes'))) {
-//   console.log('Directorio Routes encontrado')
-// } else {
-//   console.log(pc.blue('Directorio routes no encontrado. Generando rutas...'))
-//   try {
-//     await generateRoutes()
-//   } catch (error) {
-//     console.error(error)
-//     process.exit(1) // Cierra la aplicacion si la generacion de modelos falla.
-//   }
-// }
+if (fs.existsSync(join(dirname, 'routes'))) {
+  console.log('Directorio Routes encontrado')
+} else {
+  console.log(pc.blue('Directorio routes no encontrado. Generando rutas...'))
+  try {
+    await generateRoutes()
+  } catch (error) {
+    console.error(error)
+    process.exit(1) // Cierra la aplicacion si la generacion de modelos falla.
+  }
+}
 
 // if (fs.existsSync(join(dirname, 'swagger.json'))) {
 //   console.log('swagger.json encontrado')
@@ -62,7 +64,21 @@ if (fs.existsSync(join(dirname, 'models'))) {
 
 console.log('HOLA')
 
-// const app = express()
+// Genera el archivo Swagger JSON a partir de la configuración
+const specs = swaggerJsdoc(swaggerConfig)
+
+// Convierte el objeto en formato JSON
+const swaggerJSON = JSON.stringify(specs, null, 2)
+
+// Ruta donde deseas guardar el archivo swagger.json
+const outputPath = path.join(dirname, 'swagger.json')
+
+// Guarda el archivo JSON
+fs.writeFileSync(outputPath, swaggerJSON)
+
+const app = express()
+
+app.use('/', swaggerUI.serve, swaggerUI.setup(specs))
 
 // // MIDDLEWARE
 // // Proporciona configuraciones de seguridad para proteger tu aplicación de diversas vulnerabilidades web, como ataques de inyección, secuencias de comandos entre sitios (XSS) y falsificación de solicitudes entre sitios (CSRF).
@@ -126,6 +142,6 @@ console.log('HOLA')
 //   res.send(swaggerDocument)
 // })
 
-// app.listen(port, () => {
-//   console.log(pc.bgYellow(` Servidor iniciado en el puerto ${port} `))
-// })
+app.listen(port, () => {
+  console.log(pc.bgYellow(` Servidor iniciado en el puerto ${port} `))
+})

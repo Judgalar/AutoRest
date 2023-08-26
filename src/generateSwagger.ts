@@ -23,21 +23,19 @@ const config = JSON.parse(jsonConfig)
 if (config === null) {
   throw new Error('No se pudo leer la configuración desde el archivo JSON.')
 }
-const dbName = config.database.name
 
 // const swaggerAutogenInstance = swaggerAutogen({ openapi: '3.1.0' })
 
 // Definir la información del documento Swagger
 const doc = {
   info: {
-    title: `${dbName}`,
+    title: `${config.database.name}`,
     description: 'API REST generada automáticamente',
     version: '1.0.0'
   },
   servers: [
     {
-      url: `http://localhost:${port}`,
-      description: 'Servidor local'
+      url: `${config.database.host}:${port}`
     }
   ],
   components: {
@@ -63,25 +61,35 @@ export default async function generarSwagger (): Promise<void> {
     const jsonSwagger = fs.readFileSync(swaggerFilePath, 'utf-8')
     const swaggerDocument = JSON.parse(jsonSwagger)
 
-    // Agregar rutas para cada modelo
     for (const file of modelFiles) {
       const modulePath = `./models/${file}`
-      if (modulePath === './models/init-models.js') continue
+
+      const isTsFile = file.endsWith('.ts')
+      const modelName = file.replace(isTsFile ? '.ts' : '.js', '')
+      if (modelName === undefined || modelName === null || modelName === '' || modelName === 'init-models') continue
+
       const defineModelModule = await import(modulePath)
-      const model = defineModelModule.default
+      // console.log(modulePath)
+      // console.log(modelName + 'Attributes')
+      // const interfaz = `${modelName}Attributes`
+      // const attributes = defineModelModule[interfaz]
+      // console.log('defineModelModule:', defineModelModule)
+      // console.log('attributes:', attributes)
+      // Asegúrate de que la exportación de clienteAttributes está dentro del objeto cliente
+      const clienteModule = defineModelModule.cliente
+      const attributes = clienteModule.clienteAttributes
 
-      const modelName = model.name
-      if (modelName === undefined) continue
       // Generar el esquema del modelo dinámicamente
-      const modelAttributes = model.rawAttributes
       const modelSchema: ModelSchema = {
-        properties: {}
+        properties: {} // Deja esto vacío por ahora
       }
-
-      for (const attrName in modelAttributes) {
-        const attribute = modelAttributes[attrName]
-        modelSchema.properties[attrName] = {
-          type: attribute.type.key.toLowerCase()
+      console.log(attributes)
+      // Agrega las propiedades del modelo al esquema
+      for (const prop in attributes) {
+        console.log('buenas tardes')
+        if (Object.prototype.hasOwnProperty.call(attributes, prop)) {
+          modelSchema.properties[prop] = { type: typeof attributes[prop] }
+          console.log(typeof attributes[prop])
         }
       }
 
