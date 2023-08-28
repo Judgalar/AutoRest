@@ -1,26 +1,55 @@
 import { type Request, type Response } from 'express'
 import bcrypt from 'bcrypt'
 
-import { users } from '../../auth/models'
+import { users } from '../../auth/models.js'
 
 // Define la interfaz para el modelo de usuario
 interface User {
   id: number
-  name: string
+  username: string
   password: string
-  salt: string
 }
 
 export default function registroUsuario (req: Request, res: Response): void {
-  const { name, password }: { name: string, password: string } = req.body
+  const { username, password } = req.body
 
-  buscarUsuario(name)
+  if (username === undefined || password === undefined) {
+    const errorResponse: Record<string, string> = {}
+
+    if (username === undefined) {
+      errorResponse.username = 'undefined'
+    }
+
+    if (password === undefined) {
+      errorResponse.password = 'undefined'
+    }
+
+    res.status(400).json({ error: errorResponse })
+    return
+  }
+
+  if (typeof username !== 'string' || typeof password !== 'string') {
+    const errorResponse: Record<string, string> = {}
+
+    if (typeof username !== 'string') {
+      errorResponse.username = 'Not string'
+    }
+
+    if (typeof password !== 'string') {
+      errorResponse.password = 'Not string'
+    }
+
+    res.status(400).json({ error: errorResponse })
+    return
+  }
+
+  buscarUsuario(username)
     .then((usuarioEncontrado) => {
       if (usuarioEncontrado !== null) {
         console.log('Usuario encontrado:', usuarioEncontrado)
         res.status(409).json({ message: 'El usuario ya existe', usuario: usuarioEncontrado })
       } else {
-        registrarUsuario(name, password)
+        registrarUsuario(username, password)
           .then(() => {
             res.status(201).json({ message: 'Usuario registrado correctamente' })
           })
@@ -36,10 +65,10 @@ export default function registroUsuario (req: Request, res: Response): void {
     })
 }
 
-const buscarUsuario = async (name: string): Promise<User | null> => {
+const buscarUsuario = async (username: string): Promise<User | null> => {
   try {
     // Buscar al usuario en la base de datos
-    const usuario = await users.findOne({ where: { name } })
+    const usuario = await users.findOne({ where: { username } })
 
     if (usuario === null) {
       return null
@@ -55,7 +84,7 @@ const buscarUsuario = async (name: string): Promise<User | null> => {
   }
 }
 
-const registrarUsuario = async (name: string, password: string): Promise<void> => {
+const registrarUsuario = async (username: string, password: string): Promise<void> => {
   try {
     // Generar un salt para el hashing
     const saltRounds = 10
@@ -65,7 +94,7 @@ const registrarUsuario = async (name: string, password: string): Promise<void> =
     const hashedPassword = await bcrypt.hash(password, salt)
 
     // Realizar la operación de registro en la base de datos usando create
-    await users.create({ name, password: hashedPassword, salt })
+    await users.create({ username, password: hashedPassword })
     console.log('Usuario registrado correctamente')
   } catch (error) {
     console.error('Error al registrar usuario:', error)

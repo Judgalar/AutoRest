@@ -1,25 +1,21 @@
-import express, { type Router } from 'express'
+import express, { type Router, type Request, type Response } from 'express'
 import fs from 'fs'
 import path, { join } from 'path'
 import { fileURLToPath } from 'url'
 import swaggerUI from 'swagger-ui-express'
-import { readFile } from 'fs/promises'
 import pc from 'picocolors'
-
-import helmet from 'helmet'
 import cors from 'cors'
 import morgan from 'morgan'
 import cookieParser from 'cookie-parser'
 import compression from 'compression'
+import verificarToken from './middleware/verificarToken.js'
 
 import { port } from './constants.js'
-import authRoutes from './auth/auth.js'
 import { sqlConnection } from './sqlConnection.js'
-import generarModelos from './sequelizeAutoESM.js'
 import generateRoutes from './generateRoutes.js'
-import generateSwagger from './generateSwagger.js'
-import swaggerConfig from './swaggerConfig'
-import swaggerJsdoc from 'swagger-jsdoc'
+import generateSwagger from './swagger.js'
+
+import authRouter from './auth/auth.js'
 
 await sqlConnection.authenticate()
 
@@ -31,7 +27,7 @@ if (fs.existsSync(join(dirname, 'models'))) {
 } else {
   console.log(pc.blue('Directorio models no encontrado. Generando modelos...'))
   try {
-    await generarModelos()
+    await import('./sequelizeAutoCmd.js')
   } catch (error) {
     console.error(error)
     process.exit(1) // Cierra la aplicacion si la generacion de modelos falla.
@@ -50,98 +46,81 @@ if (fs.existsSync(join(dirname, 'routes'))) {
   }
 }
 
-// if (fs.existsSync(join(dirname, 'swagger.json'))) {
-//   console.log('swagger.json encontrado')
-// } else {
-//   console.log(pc.blue('swagger.json no encontrado. Generando swagger...'))
-//   try {
-//     await generateSwagger()
-//   } catch (error) {
-//     console.error(error)
-//     process.exit(1) // Cierra la aplicacion si la generacion de modelos falla.
-//   }
-// }
-
-console.log('HOLA')
-
-// Genera el archivo Swagger JSON a partir de la configuración
-const specs = swaggerJsdoc(swaggerConfig)
-
-// Convierte el objeto en formato JSON
-const swaggerJSON = JSON.stringify(specs, null, 2)
-
-// Ruta donde deseas guardar el archivo swagger.json
-const outputPath = path.join(dirname, 'swagger.json')
-
-// Guarda el archivo JSON
-fs.writeFileSync(outputPath, swaggerJSON)
+if (fs.existsSync(join(dirname, 'swagger.json'))) {
+  console.log('swagger.json encontrado')
+} else {
+  console.log(pc.blue('Documento swagger no encontrado. Generando swagger.json...'))
+  try {
+    await generateSwagger()
+  } catch (error) {
+    console.error(error)
+    process.exit(1) // Cierra la aplicacion si la generacion de modelos falla.
+  }
+}
 
 const app = express()
 
-app.use('/', swaggerUI.serve, swaggerUI.setup(specs))
+// MIDDLEWARE
 
-// // MIDDLEWARE
-// // Proporciona configuraciones de seguridad para proteger tu aplicación de diversas vulnerabilidades web, como ataques de inyección, secuencias de comandos entre sitios (XSS) y falsificación de solicitudes entre sitios (CSRF).
-// app.use(helmet())
+// Permite solicitudes de origen cruzado (Cross-Origin Resource Sharing) y te ayuda a controlar las políticas de acceso a tu API.
+app.use(cors())
 
-// // Permite solicitudes de origen cruzado (Cross-Origin Resource Sharing) y te ayuda a controlar las políticas de acceso a tu API.
-// app.use(cors())
+// Comprime las respuestas enviadas desde el servidor para reducir el tamaño de los datos transferidos y mejorar el rendimiento.
+app.use(compression())
 
-// // Comprime las respuestas enviadas desde el servidor para reducir el tamaño de los datos transferidos y mejorar el rendimiento.
-// app.use(compression())
+// Registra los registros de solicitud HTTP para ayudarte a depurar y monitorear tus solicitudes entrantes
+app.use(morgan('dev'))
 
-// // Registra los registros de solicitud HTTP para ayudarte a depurar y monitorear tus solicitudes entrantes
-// app.use(morgan('dev'))
+// Middleware para análisis de JSON y URL-encoded
+app.use(express.json())
+app.use(express.urlencoded({ extended: true }))
 
-// // Middleware para análisis de JSON y URL-encoded
-// app.use(express.json())
-// app.use(express.urlencoded({ extended: true }))
+// Analiza y administra las cookies de las solicitudes
+app.use(cookieParser())
 
-// // Analiza y administra las cookies de las solicitudes
-// app.use(cookieParser())
+// Middleware para registro de solicitudes
+app.use((req, res, next) => {
+  console.log('Solicitud recibida:', req.method, req.url)
+  next()
+})
 
-// // Middleware para registro de solicitudes
-// app.use((req, res, next) => {
-//   console.log('Solicitud recibida:', req.method, req.url)
-//   next()
-// })
-
-// const routesPath = join(dirname, 'routes')
-// const routesFiles = fs.readdirSync(routesPath)
-
-// const clientesRouter: Router = await import('./routes/cliente')
-// app.use('/clientes')
+app.use('/auth', authRouter)
 
 // RUTAS DINÁMICAS
-// for (const routeFile of routesFiles) {
-//   const route = routeFile.split('.js')[0]
-//   //const router: Router = await import(`./routes/${routeFile}`)
-//   // app.use(`/${route}`, router)
-// }
+const routesPath = join(dirname, 'routes')
+const routesFiles = fs.readdirSync(routesPath)
+console.log('Creando rutas dinámicas')
+for (const routeFile of routesFiles) {
+  const routeName = path.parse(routeFile).name
 
-// app.use('/auth', authRoutes)
+  const routerModule = await import(`./routes/${routeFile}`)
+  const router: Router = routerModule.default
 
-// // Ruta al archivo JSON de Swagger
-// const swaggerFilePath = path.join(dirname, 'swagger.json')
+  app.use(`/${routeName}`, router)
 
-// // Leer el archivo JSON de Swagger
-// let swaggerDocument: any
-// try {
-//   const jsonSwagger = await readFile(swaggerFilePath, 'utf-8')
-//   swaggerDocument = JSON.parse(jsonSwagger)
-// } catch (error) {
-//   console.error('Error al leer el archivo JSON de Swagger:', error)
-//   process.exit(1) // Termina la aplicación en caso de error
-// }
+  console.log(`/${routeName}`)
+}
 
-// // Configurar Swagger UI
-// app.use('/', swaggerUI.serve, swaggerUI.setup(swaggerDocument))
-// // Ruta para acceder al archivo JSON de Swagger
-// app.get('/swagger.json', (req, res) => {
-//   res.setHeader('Content-Type', 'application/json')
-//   res.send(swaggerDocument)
-// })
+// Ruta protegida que utiliza el middleware de verificación
+app.get('/ruta-protegida', verificarToken, (req: Request, res: Response) => {
+  // El usuario ha pasado la verificación del token, puedes acceder a req.usuario
+  res.json({ mensaje: 'Acceso permitido', usuario: req.usuario })
+})
+
+// Ruta al archivo JSON de Swagger
+const swaggerFilePath = path.join(dirname, 'swagger.json')
+
+// Leer el archivo JSON de Swagger
+try {
+  const jsonSwagger = fs.readFileSync(swaggerFilePath, 'utf-8')
+  const swaggerDocument = JSON.parse(jsonSwagger)
+  // Configurar Swagger UI
+  app.use('/', swaggerUI.serve, swaggerUI.setup(swaggerDocument))
+} catch (error) {
+  console.error('Error al leer el archivo JSON de Swagger:', error)
+  process.exit(1) // Termina la aplicación en caso de error
+}
 
 app.listen(port, () => {
-  console.log(pc.bgYellow(` Servidor iniciado en el puerto ${port} `))
+  console.log(pc.green(` Servidor iniciado en el puerto ${port} `))
 })

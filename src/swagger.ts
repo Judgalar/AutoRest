@@ -1,21 +1,17 @@
 import swaggerAutogen from 'swagger-autogen'
-import path from 'path'
-import { fileURLToPath } from 'url'
 import fs from 'fs'
 import pc from 'picocolors'
-
+import path from 'path'
+import { fileURLToPath } from 'url'
 import { port } from './constants.js'
+import { sqlConnection } from './sqlConnection.js'
+import { type Dialect } from 'sequelize/types'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
 
 // Rutas de archivos y configuraciones
 const configPath = path.join(dirname, 'config.json')
-
-const swaggerFilePath = path.join(dirname, 'swagger.json')
-const serverFilePath = path.join(dirname, 'main')
-const endpointsFiles = [serverFilePath]
-
 // Cargar configuración
 const jsonConfig = fs.readFileSync(configPath, 'utf-8')
 const config = JSON.parse(jsonConfig)
@@ -24,72 +20,90 @@ if (config === null) {
   throw new Error('No se pudo leer la configuración desde el archivo JSON.')
 }
 
-// const swaggerAutogenInstance = swaggerAutogen({ openapi: '3.1.0' })
+const database = config.database as {
+  name: string
+  user: string
+  password: string
+  host: string
+  dialect: Dialect
+}
 
-// Definir la información del documento Swagger
 const doc = {
   info: {
-    title: `${config.database.name}`,
-    description: 'API REST generada automáticamente',
-    version: '1.0.0'
+    version: '', // by default: '1.0.0'
+    title: `${database.name}`,
+    description: 'API REST generada automáticamente'
   },
   servers: [
     {
-      url: `${config.database.host}:${port}`
+      url: `http://${database.host}:${port}`
     }
   ],
+  consumes: [], // by default: ['application/json']
+  produces: [], // by default: ['application/json']
+  tags: [], // by default: empty Array
+  securityDefinitions: {
+    bearerAuth: {
+      type: 'http',
+      scheme: 'bearer',
+      bearerFormat: 'JWT'
+    }
+  },
   components: {
     schemas: {}
-  },
-  paths: {}
+  }
 }
 
-interface ModelSchema {
-  properties: Record<string, { type: string }>
-}
+const swaggerFilePath = path.join(dirname, 'swagger.json')
+const endpointsFiles = ['./main']
 
-export default async function generarSwagger (): Promise<void> {
-  // Obtener lista de archivos de modelos
-  const modelsPath = path.join(dirname, 'models')
-  const modelFiles = fs.readdirSync(modelsPath)
-
+// Generar la documentación Swagger
+export default async function generateSwagger (): Promise<void> {
   try {
-    // Generar la documentación Swagger
     await swaggerAutogen({ openapi: '3.1.0' })(swaggerFilePath, endpointsFiles, doc)
 
     // Leer el archivo Swagger generado
-    const jsonSwagger = fs.readFileSync(swaggerFilePath, 'utf-8')
-    const swaggerDocument = JSON.parse(jsonSwagger)
+    const jsonData = fs.readFileSync(swaggerFilePath, 'utf-8')
+    const swaggerDocument = JSON.parse(jsonData)
+
+    // Obtener lista de archivos de modelos
+    const modelsPath = path.join(dirname, 'models')
+    const modelFiles = fs.readdirSync(modelsPath)
 
     for (const file of modelFiles) {
       const modulePath = `./models/${file}`
 
       const isTsFile = file.endsWith('.ts')
       const modelName = file.replace(isTsFile ? '.ts' : '.js', '')
-      if (modelName === undefined || modelName === null || modelName === '' || modelName === 'init-models') continue
+      if (modelName === undefined || modelName === null || modelName === '') continue
 
       const defineModelModule = await import(modulePath)
-      // console.log(modulePath)
-      // console.log(modelName + 'Attributes')
-      // const interfaz = `${modelName}Attributes`
-      // const attributes = defineModelModule[interfaz]
-      // console.log('defineModelModule:', defineModelModule)
-      // console.log('attributes:', attributes)
-      // Asegúrate de que la exportación de clienteAttributes está dentro del objeto cliente
-      const clienteModule = defineModelModule.cliente
-      const attributes = clienteModule.clienteAttributes
+
+      const modelClass = defineModelModule[modelName]
+
+      if (typeof modelClass === 'undefined' || modelClass === null) {
+        console.error(`Fichero ${modulePath} no contiene clase ${modelName}, continuando...`)
+        continue
+      }
+
+      const model = modelClass.initModel(sqlConnection)
+
+      // const model = await import(join(modelsPath, file))(sqlConnection, Sequelize.DataTypes)
 
       // Generar el esquema del modelo dinámicamente
-      const modelSchema: ModelSchema = {
-        properties: {} // Deja esto vacío por ahora
+      const modelAttributes = model.rawAttributes
+      const modelSchema: {
+        type: string
+        properties: Record<string, { type: string }>
+      } = {
+        type: 'object',
+        properties: {}
       }
-      console.log(attributes)
-      // Agrega las propiedades del modelo al esquema
-      for (const prop in attributes) {
-        console.log('buenas tardes')
-        if (Object.prototype.hasOwnProperty.call(attributes, prop)) {
-          modelSchema.properties[prop] = { type: typeof attributes[prop] }
-          console.log(typeof attributes[prop])
+
+      for (const attrName in modelAttributes) {
+        const attribute = modelAttributes[attrName]
+        modelSchema.properties[attrName] = {
+          type: attribute.type.key.toLowerCase()
         }
       }
 
@@ -287,13 +301,11 @@ export default async function generarSwagger (): Promise<void> {
 
     // Convertir el objeto swaggerDocument de vuelta a una cadena JSON
     const jsonModificado = JSON.stringify(swaggerDocument, null, 2)
-
     // Escribir la cadena JSON modificada en el archivo swagger.json
     fs.writeFileSync(swaggerFilePath, jsonModificado)
 
     console.log(pc.green('Fichero Swagger.json generado correctamente'))
   } catch (error) {
     console.error('Error al generar la documentación Swagger:', error)
-    throw (error)
   }
 }

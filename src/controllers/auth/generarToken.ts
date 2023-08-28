@@ -2,19 +2,18 @@ import jwt from 'jsonwebtoken'
 import { type Request, type Response } from 'express'
 import bcrypt from 'bcrypt'
 
-import { users } from '../../auth/models'
+import { users } from '../../auth/models.js'
 
-const secretKey = 'ClaveSecreta'
+export const secretKey = 'ClaveSecreta'
 
 // Define la interfaz para el modelo de usuario
 interface User {
   id: number
-  name: string
+  usernname: string
   password: string
-  salt: string
 }
 
-const verificarCredenciales = async (username: string, password: string): Promise<number | null> => {
+const verificarCredenciales = async (username: string, password: string): Promise<number | null > => {
   try {
     const usuario = await users.findOne({ where: { username } })
 
@@ -29,9 +28,7 @@ const verificarCredenciales = async (username: string, password: string): Promis
 
     if (!passwordMatch) {
       return null // Credenciales inválidas
-    }
-
-    return usuarioEncontrado.id
+    } else return usuarioEncontrado.id
   } catch (error) {
     console.error('Error al verificar las credenciales:', error)
     throw new Error('Error en el servidor')
@@ -41,19 +38,48 @@ const verificarCredenciales = async (username: string, password: string): Promis
 export default function generarToken (req: Request, res: Response): void {
   const { username, password }: { username: string, password: string } = req.body
 
-  try {
-    const userId = verificarCredenciales(username, password)
+  if (username === undefined || password === undefined) {
+    const errorResponse: Record<string, string> = {}
 
-    if (userId === null) {
-      res.status(401).json({ error: 'Usuario o contraseña incorrectos' })
-      return
+    if (username === undefined) {
+      errorResponse.username = 'undefined'
     }
 
-    const token = jwt.sign({ id: userId, username }, secretKey, { expiresIn: '1h' })
+    if (password === undefined) {
+      errorResponse.password = 'undefined'
+    }
 
-    res.json({ token })
-  } catch (error) {
-    console.error('Error al generar el token:', error)
-    res.status(500).json({ error: 'Error en el servidor' })
+    res.status(400).json({ error: errorResponse })
+    return
   }
+
+  if (typeof username !== 'string' || typeof password !== 'string') {
+    const errorResponse: Record<string, string> = {}
+
+    if (typeof username !== 'string') {
+      errorResponse.username = 'Not string'
+    }
+
+    if (typeof password !== 'string') {
+      errorResponse.password = 'Not string'
+    }
+
+    res.status(400).json({ error: errorResponse })
+    return
+  }
+
+  verificarCredenciales(username, password)
+    .then((userId) => {
+      if (userId === null) {
+        res.status(401).json({ error: 'Usuario o contraseña incorrectos' })
+        return
+      }
+
+      const token = jwt.sign({ username }, secretKey, { expiresIn: '1h' })
+      res.json({ token })
+    })
+    .catch((error) => {
+      console.error('Error al generar el token:', error)
+      res.status(500).json({ error: 'Error en el servidor' })
+    })
 }
