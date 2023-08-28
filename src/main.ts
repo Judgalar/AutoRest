@@ -1,4 +1,4 @@
-import express, { type Router } from 'express'
+import express, { type Router, type Request, type Response } from 'express'
 import fs from 'fs'
 import path, { join } from 'path'
 import { fileURLToPath } from 'url'
@@ -10,12 +10,15 @@ import cors from 'cors'
 import morgan from 'morgan'
 import cookieParser from 'cookie-parser'
 import compression from 'compression'
+import verificarToken from './middleware/verificarToken.js'
 
 import { port } from './constants.js'
 import { sqlConnection } from './sqlConnection.js'
-import generarModelos from './sequelizeAutoESM.js'
+import generarModelos from './sequelizeAutoCmd.js'
 import generateRoutes from './generateRoutes.js'
 import swaggerConfig from './swaggerConfig.js'
+
+import authRouter from './auth/auth.js'
 
 await sqlConnection.authenticate()
 
@@ -45,20 +48,6 @@ if (fs.existsSync(join(dirname, 'routes'))) {
     process.exit(1) // Cierra la aplicacion si la generacion de modelos falla.
   }
 }
-
-// if (fs.existsSync(join(dirname, 'swagger.json'))) {
-//   console.log('swagger.json encontrado')
-// } else {
-//   console.log(pc.blue('swagger.json no encontrado. Generando swagger...'))
-//   try {
-//     await generateSwagger()
-//   } catch (error) {
-//     console.error(error)
-//     process.exit(1) // Cierra la aplicacion si la generacion de modelos falla.
-//   }
-// }
-
-console.log('HOLA')
 
 // Genera el archivo Swagger JSON a partir de la configuración
 const specs = swaggerJsdoc(swaggerConfig)
@@ -98,29 +87,28 @@ app.use((req, res, next) => {
   next()
 })
 
-const routesPath = join(dirname, 'routes')
-const routesFiles = fs.readdirSync(routesPath)
-
-// const clientesRouter: Router = await import('./routes/cliente')
-// app.use('/clientes')
+app.use('/auth', authRouter)
 
 // RUTAS DINÁMICAS
+const routesPath = join(dirname, 'routes')
+const routesFiles = fs.readdirSync(routesPath)
+console.log('Importando routers')
 for (const routeFile of routesFiles) {
-  let routeName = ''
-
-  if (routeFile.endsWith('.ts')) {
-    routeName = routeFile.slice(0, -3)
-  } else if (routeFile.endsWith('.js')) {
-    routeName = routeFile.slice(0, -3)
-  }
+  const routeName = path.parse(routeFile).name
 
   const routerModule = await import(`./routes/${routeFile}`)
-  const router: Router = routerModule.default // Accede al middleware del enrutador
+  const router: Router = routerModule.default
+
   app.use(`/${routeName}`, router)
+
   console.log(`/${routeName}`)
 }
 
-// app.use('/auth', authRoutes)
+// Ruta protegida que utiliza el middleware de verificación
+app.get('/ruta-protegida', verificarToken, (req: Request, res: Response) => {
+  // El usuario ha pasado la verificación del token, puedes acceder a req.usuario
+  res.json({ mensaje: 'Acceso permitido', usuario: req.usuario })
+})
 
 // // Ruta al archivo JSON de Swagger
 // const swaggerFilePath = path.join(dirname, 'swagger.json')
@@ -143,7 +131,7 @@ for (const routeFile of routesFiles) {
 //   res.send(swaggerDocument)
 // })
 
-app.use('/', swaggerUI.serve, swaggerUI.setup(specs))
+app.use('/api-docs', swaggerUI.serve, swaggerUI.setup(specs))
 
 app.listen(port, () => {
   console.log(pc.bgYellow(` Servidor iniciado en el puerto ${port} `))

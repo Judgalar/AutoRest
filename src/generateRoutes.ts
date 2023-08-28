@@ -48,6 +48,7 @@ function generateRoutesContent (modelName: string): string {
   import express from 'express'
   import { sqlConnection } from '../sqlConnection.js'
   import * as defineModel_${modelName} from '../models/${modelName}.js'
+  import verificarToken from '../middleware/verificarToken.js'
   
   const ${modelName}Class = defineModel_${modelName}.${modelName}
   const ${modelName} = ${modelName}Class.initModel(sqlConnection)
@@ -85,6 +86,8 @@ function generateRoutesContent (modelName: string): string {
  *           schema:
  *             nombre_cliente: Nuevo Cliente
  *             telefono: 123456789
+ *     security:
+ *       - jwt: []
  *     responses:
  *       201:
  *         description: ${modelName} creado exitosamente
@@ -126,6 +129,8 @@ function generateRoutesContent (modelName: string): string {
  *         application/json:
  *           example:
  *             nombre_cliente: Cliente Modificado
+ *     security:
+ *       - jwt: []
  *     responses:
  *       200:
  *         description: ${modelName} actualizado exitosamente
@@ -136,6 +141,8 @@ function generateRoutesContent (modelName: string): string {
  *         name: id
  *         required: true
  *         description: ID de ${modelName}
+ *     security:
+ *       - jwt: []
  *     responses:
  *       200:
  *         description: ${modelName} eliminado exitosamente
@@ -170,7 +177,7 @@ function generateRoutesContent (modelName: string): string {
   });
   
   // Ruta para crear un nuevo registro
-  router.post('/', async (req, res) => {
+  router.post('/', verificarToken, async (req, res) => {
     try {
       const newData = req.body;
       const createdData = await ${modelName}.create(newData);
@@ -182,7 +189,7 @@ function generateRoutesContent (modelName: string): string {
   });
   
   // Ruta para actualizar un registro
-  router.put('/:id', async (req, res) => {
+  router.put('/:id', verificarToken, async (req, res) => {
     try {
       const { id } = req.params;
       const updatedData = req.body;
@@ -201,7 +208,7 @@ function generateRoutesContent (modelName: string): string {
   });
   
   // Ruta para eliminar un registro
-  router.delete('/:id', async (req, res) => {
+  router.delete('/:id', verificarToken, async (req, res) => {
     try {
       const { id } = req.params;
       const registro = await ${modelName}.findByPk(id);
