@@ -1,7 +1,7 @@
 import { type Request, type Response, type NextFunction } from 'express'
 import jwt from 'jsonwebtoken'
 
-import { secretKey } from '../controllers/auth/generarToken'
+import { secretKey } from '../controllers/auth/generarToken.js'
 
 declare module 'express-serve-static-core' {
   interface Request {

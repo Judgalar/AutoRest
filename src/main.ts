@@ -4,8 +4,6 @@ import path, { join } from 'path'
 import { fileURLToPath } from 'url'
 import swaggerUI from 'swagger-ui-express'
 import pc from 'picocolors'
-import swaggerJsdoc from 'swagger-jsdoc'
-
 import cors from 'cors'
 import morgan from 'morgan'
 import cookieParser from 'cookie-parser'
@@ -14,9 +12,8 @@ import verificarToken from './middleware/verificarToken.js'
 
 import { port } from './constants.js'
 import { sqlConnection } from './sqlConnection.js'
-import generarModelos from './sequelizeAutoCmd.js'
 import generateRoutes from './generateRoutes.js'
-import swaggerConfig from './swaggerConfig.js'
+import generateSwagger from './swagger.js'
 
 import authRouter from './auth/auth.js'
 
@@ -30,7 +27,7 @@ if (fs.existsSync(join(dirname, 'models'))) {
 } else {
   console.log(pc.blue('Directorio models no encontrado. Generando modelos...'))
   try {
-    await generarModelos()
+    await import('./sequelizeAutoCmd.js')
   } catch (error) {
     console.error(error)
     process.exit(1) // Cierra la aplicacion si la generacion de modelos falla.
@@ -49,17 +46,17 @@ if (fs.existsSync(join(dirname, 'routes'))) {
   }
 }
 
-// Genera el archivo Swagger JSON a partir de la configuración
-const specs = swaggerJsdoc(swaggerConfig)
-
-// Convierte el objeto en formato JSON
-const swaggerJSON = JSON.stringify(specs, null, 2)
-
-// Ruta donde deseas guardar el archivo swagger.json
-const outputPath = path.join(dirname, 'swagger.json')
-
-// Guarda el archivo JSON
-fs.writeFileSync(outputPath, swaggerJSON)
+if (fs.existsSync(join(dirname, 'swagger.json'))) {
+  console.log('swagger.json encontrado')
+} else {
+  console.log(pc.blue('Documento swagger no encontrado. Generando swagger.json...'))
+  try {
+    await generateSwagger()
+  } catch (error) {
+    console.error(error)
+    process.exit(1) // Cierra la aplicacion si la generacion de modelos falla.
+  }
+}
 
 const app = express()
 
@@ -92,7 +89,7 @@ app.use('/auth', authRouter)
 // RUTAS DINÁMICAS
 const routesPath = join(dirname, 'routes')
 const routesFiles = fs.readdirSync(routesPath)
-console.log('Importando routers')
+console.log('Creando rutas dinámicas')
 for (const routeFile of routesFiles) {
   const routeName = path.parse(routeFile).name
 
@@ -110,29 +107,20 @@ app.get('/ruta-protegida', verificarToken, (req: Request, res: Response) => {
   res.json({ mensaje: 'Acceso permitido', usuario: req.usuario })
 })
 
-// // Ruta al archivo JSON de Swagger
-// const swaggerFilePath = path.join(dirname, 'swagger.json')
+// Ruta al archivo JSON de Swagger
+const swaggerFilePath = path.join(dirname, 'swagger.json')
 
-// // Leer el archivo JSON de Swagger
-// let swaggerDocument: any
-// try {
-//   const jsonSwagger = await readFile(swaggerFilePath, 'utf-8')
-//   swaggerDocument = JSON.parse(jsonSwagger)
-// } catch (error) {
-//   console.error('Error al leer el archivo JSON de Swagger:', error)
-//   process.exit(1) // Termina la aplicación en caso de error
-// }
-
-// // Configurar Swagger UI
-// app.use('/', swaggerUI.serve, swaggerUI.setup(swaggerDocument))
-// // Ruta para acceder al archivo JSON de Swagger
-// app.get('/swagger.json', (req, res) => {
-//   res.setHeader('Content-Type', 'application/json')
-//   res.send(swaggerDocument)
-// })
-
-app.use('/api-docs', swaggerUI.serve, swaggerUI.setup(specs))
+// Leer el archivo JSON de Swagger
+try {
+  const jsonSwagger = fs.readFileSync(swaggerFilePath, 'utf-8')
+  const swaggerDocument = JSON.parse(jsonSwagger)
+  // Configurar Swagger UI
+  app.use('/', swaggerUI.serve, swaggerUI.setup(swaggerDocument))
+} catch (error) {
+  console.error('Error al leer el archivo JSON de Swagger:', error)
+  process.exit(1) // Termina la aplicación en caso de error
+}
 
 app.listen(port, () => {
-  console.log(pc.bgYellow(` Servidor iniciado en el puerto ${port} `))
+  console.log(pc.green(` Servidor iniciado en el puerto ${port} `))
 })

@@ -5,6 +5,7 @@
   "main": "main.js",
   "scripts": {
     "lint": "eslint . --ext .ts",
+    "prebuild": "ts-node src/sequelizeAutoCmd.ts",
     "build": "tsc && copyfiles -u 1 src/**/*.json build",
     "start": "node build/main.js",
     "dev": "ts-node src/main.ts",
@@ -31,7 +32,7 @@
     "sequelize": "^6.32.1",
     "sequelize-auto": "^0.8.8",
     "sqlite3": "^5.1.6",
-    "swagger-jsdoc": "^6.2.8",
+    "swagger-autogen": "^2.23.5",
     "swagger-ui-express": "^5.0.0",
     "tedious": "^16.4.0",
     "xml-js": "^1.6.11"
@@ -46,7 +47,6 @@
     "@types/jsonwebtoken": "^9.0.2",
     "@types/morgan": "^1.9.5",
     "@types/sequelize": "^4.28.15",
-    "@types/swagger-jsdoc": "^6.0.1",
     "@types/swagger-ui-express": "^4.1.3",
     "@typescript-eslint/eslint-plugin": "^6.4.1",
     "@typescript-eslint/parser": "^6.4.1",

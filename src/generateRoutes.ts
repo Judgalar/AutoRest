@@ -14,22 +14,21 @@ export default async function generateRoutes (): Promise<void> {
   } else fs.mkdirSync(routesDirectory, { recursive: true })
 
   const modelFiles = fs.readdirSync(modelsPath)
-  console.log(modelFiles)
+
   // Importa los modelos dinámicamente y agrega las rutas al objeto de configuración
   for (const file of modelFiles) {
     const modulePath = `./models/${file}`
-    if (modulePath === './models/init-models') continue
 
     const isTsFile = file.endsWith('.ts')
     const modelName = file.replace(isTsFile ? '.ts' : '.js', '')
-    if (modelName === undefined || modelName === null || modelName === '') continue
+    if (modelName === undefined || modelName === null || modelName === '' || modelName === 'init-models') continue
 
     const defineModelModule = await import(modulePath)
 
     const defineModel = defineModelModule[modelName]
 
     if (typeof defineModel === 'undefined' || defineModel === null) {
-      console.error(`Error al importar el modelo desde ${modulePath}`)
+      console.error(`Fichero ${modulePath} no contiene clase ${modelName}, continuando...`)
       continue
     }
 
@@ -54,99 +53,6 @@ function generateRoutesContent (modelName: string): string {
   const ${modelName} = ${modelName}Class.initModel(sqlConnection)
   
   const router = express.Router()
-  
-/**
- * @swagger
- * /${modelName}:
- *   get:
- *     summary: Obtener todos los registros de ${modelName}
- *     responses:
- *       200:
- *         description: Lista de ${modelName}
- *         content:
- *           application/json:
- *             example:
- *               - codigo_${modelName}: 1
- *                 nombre_${modelName}: ${modelName} 1
- *               - codigo_${modelName}: 2
- *                 nombre_${modelName}: ${modelName} 2  
- *       500:
- *         description: Error al obtener los registros
- *         content:
- *           application/json:
- *             example:
- *               error: Error al obtener los registros
- *   post:
- *     summary: Crear un nuevo registro de ${modelName}
- *     requestBody:
- *       required: true
- *       description: Datos del nuevo registro de ${modelName}
- *       content:
- *         application/json:
- *           schema:
- *             nombre_cliente: Nuevo Cliente
- *             telefono: 123456789
- *     security:
- *       - jwt: []
- *     responses:
- *       201:
- *         description: ${modelName} creado exitosamente
- *         content:
- *           application/json:
- *             example:
- *               codigo_cliente: 3
- *               nombre_cliente: Nuevo Cliente
- */
-
-/**
- * @swagger
- * /${modelName}/{id}:
- *   get:
- *     summary: Obtener un registro de ${modelName} por su ID
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         description: ID de ${modelName}
- *     responses:
- *       200:
- *         description: Detalles de ${modelName}
- *         content:
- *           application/json:
- *             example:
- *               codigo_cliente: 1
- *               nombre_cliente: Cliente 1
- *   put:
- *     summary: Actualizar un registro de ${modelName} por su ID
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         description: ID de ${modelName}
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           example:
- *             nombre_cliente: Cliente Modificado
- *     security:
- *       - jwt: []
- *     responses:
- *       200:
- *         description: ${modelName} actualizado exitosamente
- *   delete:
- *     summary: Eliminar un registro de ${modelName} por su ID
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         description: ID de ${modelName}
- *     security:
- *       - jwt: []
- *     responses:
- *       200:
- *         description: ${modelName} eliminado exitosamente
- */
   
   // Ruta para obtener todos los registros
   router.get('/', async (req, res) => {

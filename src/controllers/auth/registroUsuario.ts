@@ -1,7 +1,7 @@
 import { type Request, type Response } from 'express'
 import bcrypt from 'bcrypt'
 
-import { users } from '../../auth/models'
+import { users } from '../../auth/models.js'
 
 // Define la interfaz para el modelo de usuario
 interface User {
