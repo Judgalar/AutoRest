@@ -1,4 +1,4 @@
-import express, { type Router, type Request, type Response } from 'express'
+import express, { type Router } from 'express'
 import fs from 'fs'
 import path, { join } from 'path'
 import { fileURLToPath } from 'url'
@@ -8,7 +8,6 @@ import cors from 'cors'
 import morgan from 'morgan'
 import cookieParser from 'cookie-parser'
 import compression from 'compression'
-import verificarToken from './middleware/verificarToken.js'
 
 import { port } from './constants.js'
 import { sqlConnection } from './sqlConnection.js'
@@ -88,9 +87,11 @@ app.use('/auth', authRouter)
 
 // RUTAS DINÁMICAS
 const routesPath = join(dirname, 'routes')
-const routesFiles = fs.readdirSync(routesPath)
+const routeFiles = fs.readdirSync(routesPath)
+
 console.log('Creando rutas dinámicas')
-for (const routeFile of routesFiles) {
+
+for (const routeFile of routeFiles) {
   const routeName = path.parse(routeFile).name
 
   const routerModule = await import(`./routes/${routeFile}`)
@@ -100,12 +101,6 @@ for (const routeFile of routesFiles) {
 
   console.log(`/${routeName}`)
 }
-
-// Ruta protegida que utiliza el middleware de verificación
-app.get('/ruta-protegida', verificarToken, (req: Request, res: Response) => {
-  // El usuario ha pasado la verificación del token, puedes acceder a req.usuario
-  res.json({ mensaje: 'Acceso permitido', usuario: req.usuario })
-})
 
 // Ruta al archivo JSON de Swagger
 const swaggerFilePath = path.join(dirname, 'swagger.json')

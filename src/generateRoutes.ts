@@ -34,7 +34,7 @@ export default async function generateRoutes (): Promise<void> {
 
     const content = generateRoutesContent(modelName) // Genera el contenido de las rutas aquí
 
-    const fileName = `${modelName}.ts`
+    const fileName = `${modelName}.js`
     const RoutesPath = path.join(dirname, 'routes')
 
     createFile(RoutesPath, fileName, content)

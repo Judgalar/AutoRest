@@ -3,6 +3,7 @@ import fs from 'fs'
 import { fileURLToPath } from 'url'
 import path from 'path'
 import pc from 'picocolors'
+import { sqlConnection } from './sqlConnection.js'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -45,23 +46,23 @@ async function executeSequelizeAuto (cmd: string, args: string[]): Promise<void>
   })
 }
 
-export default async function sequelizeAutoESM (): Promise<void> {
-  const cmd = process.platform === 'win32' ? 'npx.cmd' : 'npx'
-  const args = [
-    'sequelize-auto',
-    '-o', output,
-    '-d', name,
-    '-h', host,
-    '-u', user,
-    '-p', 3306,
-    '-x', password,
-    '-e', dialect,
-    '-l', 'ts' // Use the -l es6 option to generate ES6 classes
-  ]
-  try {
-    await executeSequelizeAuto(cmd, args)
-    console.log(pc.green('sequelize-auto process completed successfully'))
-  } catch (error) {
-    console.error(pc.red('sequelize-auto process failed:'), error)
-  }
+const cmd = process.platform === 'win32' ? 'npx.cmd' : 'npx'
+const args = [
+  'sequelize-auto',
+  '-o', output,
+  '-d', name,
+  '-h', host,
+  '-u', user,
+  '-p', 3306,
+  '-x', password,
+  '-e', dialect,
+  '-l', 'ts'
+]
+try {
+  await sqlConnection.authenticate()
+
+  await executeSequelizeAuto(cmd, args)
+  console.log(pc.green('sequelize-auto process completed successfully'))
+} catch (error) {
+  console.error(pc.red('sequelize-auto process failed:'), error)
 }
