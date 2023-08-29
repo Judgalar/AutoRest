@@ -9,7 +9,7 @@ export const secretKey = 'ClaveSecreta'
 // Define la interfaz para el modelo de usuario
 interface User {
   id: number
-  usernname: string
+  username: string
   password: string
 }
 
