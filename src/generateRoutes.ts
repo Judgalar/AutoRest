@@ -94,22 +94,51 @@ function generateRoutesContent (modelName: string): string {
     }
   });
   
-  // Ruta para actualizar un registro
+  // Ruta para actualizar totalmente un registro
   router.put('/:id', verificarToken, async (req, res) => {
     try {
       const { id } = req.params;
       const updatedData = req.body;
-      const registro = await ${modelName}.findByPk(id);
+  
+      const registro = await cliente.findByPk(id);
   
       if (!registro) {
-        res.status(404).json({ error: '${modelName} no encontrado' });
+        res.status(404).json({ error: 'Cliente no encontrado' });
       } else {
-        await registro.update(updatedData);
-        res.json({ message: '${modelName} actualizado correctamente' });
+        Object.keys(registro.dataValues).forEach(field => {
+          if (!updatedData.hasOwnProperty(field)) {
+            registro[field] = null;
+          } else {
+            registro[field] = updatedData[field];
+          }
+        });
+  
+        await registro.save();
+        res.json({ message: 'Actualizado completamente' });
       }
     } catch (error) {
-      console.error('Error al actualizar:', error);
-      res.status(500).json({ error: 'Error al actualizar' });
+      console.error('Error al actualizar completamente:', error);
+      res.status(500).json({ error: 'Error interno al actualizar completamente' });
+    }
+  });
+  
+  // Ruta para actualizar parcialmente un registro
+  router.patch('/:id', verificarToken, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const updatedData = req.body;
+  
+      const registro = await cliente.findByPk(id);
+  
+      if (!registro) {
+        res.status(404).json({ error: 'No encontrado' });
+      } else {
+        await registro.update(updatedData);
+        res.json({ message: 'Actualizado parcialmente' });
+      }
+    } catch (error) {
+      console.error('Error al actualizar parcialmente:', error);
+      res.status(500).json({ error: 'Error interno al actualizar parcialmente' });
     }
   });
   

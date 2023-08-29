@@ -47,7 +47,7 @@ export default function registroUsuario (req: Request, res: Response): void {
     .then((usuarioEncontrado) => {
       if (usuarioEncontrado !== null) {
         console.log('Usuario encontrado:', usuarioEncontrado)
-        res.status(409).json({ message: 'El usuario ya existe', usuario: usuarioEncontrado })
+        res.status(409).json({ message: 'El usuario ya existe' })
       } else {
         registrarUsuario(username, password)
           .then(() => {

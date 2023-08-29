@@ -70,12 +70,90 @@ export default async function generateSwagger (): Promise<void> {
     const modelsPath = path.join(dirname, 'models')
     const modelFiles = fs.readdirSync(modelsPath)
 
+    swaggerDocument.paths['/auth/registro'] = {
+      post: {
+        tags: ['Registro'],
+        description: 'Registrar usuario de la API',
+        requestBody: {
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                properties: {
+                  username: {
+                    type: 'string'
+                  },
+                  password: {
+                    type: 'string'
+                  }
+                }
+              }
+            }
+          }
+        },
+        responses: {
+          200: {
+            description: 'OK'
+          },
+          409: {
+            description: 'El usuario ya existe'
+          },
+          500: {
+            description: 'Error al crear el registro'
+          }
+        }
+      }
+    }
+
+    swaggerDocument.paths['/auth/token'] = {
+      post: {
+        tags: ['GenerarToken'],
+        description: 'Generar un token para un usuario autenticado',
+        requestBody: {
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                properties: {
+                  username: {
+                    type: 'string'
+                  },
+                  password: {
+                    type: 'string'
+                  }
+                },
+                required: ['username', 'password']
+              }
+            }
+          }
+        },
+        responses: {
+          200: {
+            description: 'Token generado exitosamente',
+            content: {
+              'application/json': {
+                example: {
+                  token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6InVzZXIiLCJpYXQiOjE2MzA0NjA3NjEsImV4cCI6MTYzMDQ2NDM2MX0.xxxxxxxxxxxxxxx'
+                }
+              }
+            }
+          },
+          401: {
+            description: 'Credenciales incorrectas'
+          },
+          500: {
+            description: 'Error interno del servidor'
+          }
+        }
+      }
+    }
+
     for (const file of modelFiles) {
       const modulePath = `./models/${file}`
 
       const isTsFile = file.endsWith('.ts')
       const modelName = file.replace(isTsFile ? '.ts' : '.js', '')
-      if (modelName === undefined || modelName === null || modelName === '') continue
+      if (modelName === undefined || modelName === null || modelName === '' || modelName === 'init-models') continue
 
       const defineModelModule = await import(modulePath)
 
@@ -160,20 +238,25 @@ export default async function generateSwagger (): Promise<void> {
             500: {
               description: `Error al crear el registro de ${modelName}`
             }
-          }
+          },
+          security: [
+            {
+              bearerAuth: []
+            }
+          ]
         }
       }
 
-      swaggerDocument.paths[`/${modelName}/{id}`] = {
+      swaggerDocument.paths[`/${modelName}/{pk}`] = {
         get: {
           tags: [modelName],
-          description: `Obtiene un registro de ${modelName} por su ID`,
+          description: `Obtiene un registro de ${modelName} por su PrimaryKey`,
           parameters: [
             {
-              name: 'id',
+              name: 'pk',
               in: 'path',
               required: true,
-              description: 'ID del registro',
+              description: 'PrimaryKey del registro',
               schema: {
                 type: 'string'
               }
@@ -200,13 +283,13 @@ export default async function generateSwagger (): Promise<void> {
         },
         put: {
           tags: [modelName],
-          description: `Actualiza un registro de ${modelName} por su ID`,
+          description: `Actualiza un registro de ${modelName} por su PrimaryKey`,
           parameters: [
             {
-              name: 'id',
+              name: 'pk',
               in: 'path',
               required: true,
-              description: 'ID del registro',
+              description: 'PrimaryKey del registro',
               schema: {
                 type: 'string'
               }
@@ -232,17 +315,22 @@ export default async function generateSwagger (): Promise<void> {
             500: {
               description: `Error al actualizar el registro de ${modelName}`
             }
-          }
+          },
+          security: [
+            {
+              bearerAuth: []
+            }
+          ]
         },
         patch: {
           tags: [modelName],
-          description: `Actualiza parcialmente un registro de ${modelName} por su ID`,
+          description: `Actualiza parcialmente un registro de ${modelName} por su PrimaryKey`,
           parameters: [
             {
-              name: 'id',
+              name: 'pk',
               in: 'path',
               required: true,
-              description: 'ID del registro',
+              description: 'PrimaryKey del registro',
               schema: {
                 type: 'string'
               }
@@ -268,17 +356,22 @@ export default async function generateSwagger (): Promise<void> {
             500: {
               description: `Error al actualizar parcialmente el registro de ${modelName}`
             }
-          }
+          },
+          security: [
+            {
+              bearerAuth: []
+            }
+          ]
         },
         delete: {
           tags: [modelName],
-          description: `Elimina un registro de ${modelName} por su ID`,
+          description: `Elimina un registro de ${modelName} por su PrimaryKey`,
           parameters: [
             {
-              name: 'id',
+              name: 'pk',
               in: 'path',
               required: true,
-              description: 'ID del registro',
+              description: 'PrimaryKey del registro',
               schema: {
                 type: 'string'
               }
@@ -294,7 +387,12 @@ export default async function generateSwagger (): Promise<void> {
             500: {
               description: `Error al eliminar el registro de ${modelName}`
             }
-          }
+          },
+          security: [
+            {
+              bearerAuth: []
+            }
+          ]
         }
       }
     }
