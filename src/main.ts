@@ -9,12 +9,12 @@ import morgan from 'morgan'
 import cookieParser from 'cookie-parser'
 import compression from 'compression'
 
-import { port } from './constants.js'
-import { sqlConnection } from './sqlConnection.js'
-import generateRoutes from './generateRoutes.js'
-import generateSwagger from './swagger.js'
+import { port } from './constants'
+import { sqlConnection } from './sqlConnection'
+import generateRoutes from './generateRoutes'
+import generateSwagger from './swagger'
 
-import authRouter from './auth/auth.js'
+import authRouter from './auth/auth'
 
 await sqlConnection.authenticate()
 
@@ -26,7 +26,7 @@ if (fs.existsSync(join(dirname, 'models'))) {
 } else {
   console.log(pc.blue('Directorio models no encontrado. Generando modelos...'))
   try {
-    await import('./sequelizeAutoCmd.js')
+    await import('./sequelizeAutoCmd')
   } catch (error) {
     console.error(error)
     process.exit(1) // Cierra la aplicacion si la generacion de modelos falla.

@@ -45,9 +45,9 @@ export default async function generateRoutes (): Promise<void> {
 function generateRoutesContent (modelName: string): string {
   return `
   import express from 'express'
-  import { sqlConnection } from '../sqlConnection.js'
-  import * as defineModel_${modelName} from '../models/${modelName}.js'
-  import verificarToken from '../middleware/verificarToken.js'
+  import { sqlConnection } from '../sqlConnection'
+  import * as defineModel_${modelName} from '../models/${modelName}'
+  import verificarToken from '../middleware/verificarToken'
   
   const ${modelName}Class = defineModel_${modelName}.${modelName}
   const ${modelName} = ${modelName}Class.initModel(sqlConnection)

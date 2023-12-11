@@ -3,8 +3,8 @@ import fs from 'fs'
 import pc from 'picocolors'
 import path from 'path'
 import { fileURLToPath } from 'url'
-import { port } from './constants.js'
-import { sqlConnection } from './sqlConnection.js'
+import { port } from './constants'
+import { sqlConnection } from './sqlConnection'
 import { type Dialect } from 'sequelize/types'
 
 const filename = fileURLToPath(import.meta.url)
