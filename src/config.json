@@ -1,6 +1,6 @@
 {
     "database": {
-        "name": "jardineria",
+        "name": "autoapi_prueba",
         "user": "root",
         "password": "",
         "host": "localhost",

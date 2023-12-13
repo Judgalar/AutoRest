@@ -3,7 +3,7 @@ import fs from 'fs'
 import { fileURLToPath } from 'url'
 import path from 'path'
 import pc from 'picocolors'
-import { sqlConnection } from './sqlConnection'
+import { sqlConnection } from './sqlConnection.js'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)

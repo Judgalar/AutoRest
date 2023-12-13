@@ -9,12 +9,12 @@ import morgan from 'morgan'
 import cookieParser from 'cookie-parser'
 import compression from 'compression'
 
-import { port } from './constants'
-import { sqlConnection } from './sqlConnection'
-import generateRoutes from './generateRoutes'
-import generateSwagger from './swagger'
+import { port } from './constants.js'
+import { sqlConnection } from './sqlConnection.js'
+import generateRoutes from './generateRoutes.js'
+import generateSwagger from './swagger.js'
 
-import authRouter from './auth/auth'
+import authRouter from './auth/auth.js'
 
 await sqlConnection.authenticate()
 
