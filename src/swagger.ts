@@ -20,6 +20,7 @@ if (config === null) {
   throw new Error('No se pudo leer la configuración desde el archivo JSON.')
 }
 
+
 const database = config.database as {
   name: string
   user: string
@@ -185,6 +186,8 @@ export default async function generateSwagger (): Promise<void> {
         }
       }
 
+      const primaryKeyType = getPrimaryKeyType(modelClass);
+
       // Agregar el esquema del modelo a components/schemas
       swaggerDocument.components.schemas[modelName] = modelSchema
 
@@ -258,7 +261,7 @@ export default async function generateSwagger (): Promise<void> {
               required: true,
               description: 'PrimaryKey del registro',
               schema: {
-                type: 'string'
+                type: primaryKeyType
               }
             }
           ],
@@ -291,7 +294,7 @@ export default async function generateSwagger (): Promise<void> {
               required: true,
               description: 'PrimaryKey del registro',
               schema: {
-                type: 'string'
+                type: primaryKeyType
               }
             }
           ],
@@ -332,7 +335,7 @@ export default async function generateSwagger (): Promise<void> {
               required: true,
               description: 'PrimaryKey del registro',
               schema: {
-                type: 'string'
+                type: primaryKeyType
               }
             }
           ],
@@ -373,7 +376,7 @@ export default async function generateSwagger (): Promise<void> {
               required: true,
               description: 'PrimaryKey del registro',
               schema: {
-                type: 'string'
+                type: primaryKeyType
               }
             }
           ],
@@ -406,4 +409,17 @@ export default async function generateSwagger (): Promise<void> {
   } catch (error) {
     console.error('Error al generar la documentación Swagger:', error)
   }
+}
+
+function getPrimaryKeyType(modelClass: any) {
+  const primaryKeyField = Object.keys(modelClass.rawAttributes).find(
+    (fieldName) => modelClass.rawAttributes[fieldName].primaryKey
+  );
+
+  if (primaryKeyField) {
+    return modelClass.rawAttributes[primaryKeyField].type.key.toLowerCase();
+  }
+
+  // Manejo de errores si no se encuentra la clave primaria
+  throw new Error(`No se encontró la clave primaria en el modelo ${modelClass.name}`);
 }
