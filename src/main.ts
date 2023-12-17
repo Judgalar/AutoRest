@@ -9,7 +9,7 @@ import morgan from 'morgan'
 import cookieParser from 'cookie-parser'
 import compression from 'compression'
 
-import { port } from './constants.js'
+import { port, useSwaggerUI } from './constants.js'
 import { sqlConnection } from './sqlConnection.js'
 import generateRoutes from './generateRoutes.js'
 import generateSwagger from './swagger.js'
@@ -102,18 +102,20 @@ for (const routeFile of routeFiles) {
   console.log(`/${routeName}`)
 }
 
-// Ruta al archivo JSON de Swagger
-const swaggerFilePath = path.join(dirname, 'swagger.json')
+if (useSwaggerUI) {
+  // Ruta al archivo JSON de Swagger
+  const swaggerFilePath = path.join(dirname, 'swagger.json')
 
-// Leer el archivo JSON de Swagger
-try {
-  const jsonSwagger = fs.readFileSync(swaggerFilePath, 'utf-8')
-  const swaggerDocument = JSON.parse(jsonSwagger)
-  // Configurar Swagger UI
-  app.use('/', swaggerUI.serve, swaggerUI.setup(swaggerDocument))
-} catch (error) {
-  console.error('Error al leer el archivo JSON de Swagger:', error)
-  process.exit(1) // Termina la aplicación en caso de error
+  // Leer el archivo JSON de Swagger
+  try {
+    const jsonSwagger = fs.readFileSync(swaggerFilePath, 'utf-8')
+    const swaggerDocument = JSON.parse(jsonSwagger)
+    // Configurar Swagger UI
+    app.use('/', swaggerUI.serve, swaggerUI.setup(swaggerDocument))
+  } catch (error) {
+    console.error('Error al leer el archivo JSON de Swagger:', error)
+    process.exit(1) // Termina la aplicación en caso de error
+  }
 }
 
 app.listen(port, () => {
