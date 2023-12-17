@@ -34,7 +34,7 @@ export default async function generateRoutes (): Promise<void> {
 
     const content = generateRoutesContent(modelName) // Genera el contenido de las rutas aquí
 
-    const fileName = `${modelName}.js`
+    const fileName = isTsFile ? `${modelName}.ts` : `${modelName}.js`
     const RoutesPath = path.join(dirname, 'routes')
 
     createFile(RoutesPath, fileName, content)
@@ -100,10 +100,10 @@ function generateRoutesContent (modelName: string): string {
       const { id } = req.params;
       const updatedData = req.body;
   
-      const registro = await cliente.findByPk(id);
+      const registro = await ${modelName}.findByPk(id);
   
       if (!registro) {
-        res.status(404).json({ error: 'Cliente no encontrado' });
+        res.status(404).json({ error: '${modelName} no encontrado' });
       } else {
         Object.keys(registro.dataValues).forEach(field => {
           if (!updatedData.hasOwnProperty(field)) {
@@ -128,7 +128,7 @@ function generateRoutesContent (modelName: string): string {
       const { id } = req.params;
       const updatedData = req.body;
   
-      const registro = await cliente.findByPk(id);
+      const registro = await ${modelName}.findByPk(id);
   
       if (!registro) {
         res.status(404).json({ error: 'No encontrado' });

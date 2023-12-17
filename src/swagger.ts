@@ -30,7 +30,7 @@ const database = config.database as {
 
 const doc = {
   info: {
-    version: '', // by default: '1.0.0'
+    version: '', // por defecto: '1.0.0'
     title: `${database.name}`,
     description: 'API REST generada automáticamente'
   },
@@ -39,9 +39,9 @@ const doc = {
       url: `http://${database.host}:${port}`
     }
   ],
-  consumes: [], // by default: ['application/json']
-  produces: [], // by default: ['application/json']
-  tags: [], // by default: empty Array
+  consumes: [], // por defecto: ['application/json']
+  produces: [], // por defecto: ['application/json']
+  tags: [], // por defecto: array vacio
   securityDefinitions: {
     bearerAuth: {
       type: 'http',
