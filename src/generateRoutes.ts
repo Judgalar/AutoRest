@@ -15,7 +15,7 @@ export default async function generateRoutes (): Promise<void> {
 
   const modelFiles = fs.readdirSync(modelsPath)
 
-  // Importa los modelos dinámicamente y agrega las rutas al objeto de configuración
+  // Importar los modelos dinámicamente y crear ficheros
   for (const file of modelFiles) {
     const modulePath = `./models/${file}`
 
