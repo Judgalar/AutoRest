@@ -9,6 +9,8 @@
     "build": "tsc && copyfiles -u 1 src/**/*.json build",
     "start": "node build/main.js",
     "dev": "tsx src/main.ts",
+    "clearbuild": "rimraf build",
+    "clear": "rimraf src/models src/routes src/swagger.json",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
@@ -56,6 +58,7 @@
     "eslint-plugin-import": "^2.29.0",
     "eslint-plugin-n": "^16.4.0",
     "eslint-plugin-promise": "^6.1.1",
+    "rimraf": "^5.0.5",
     "tsx": "^4.6.2",
     "typescript": "^5.3.3"
   }
