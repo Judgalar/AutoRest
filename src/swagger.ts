@@ -6,6 +6,7 @@ import { fileURLToPath } from 'url'
 import { port } from './constants.js'
 import { sqlConnection } from './sqlConnection.js'
 import { type Dialect } from 'sequelize/types'
+import { DataTypes } from 'sequelize'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -156,16 +157,21 @@ export default async function generateSwagger (): Promise<void> {
       const modelName = file.replace(isTsFile ? '.ts' : '.js', '')
       if (modelName === undefined || modelName === null || modelName === '' || modelName === 'init-models') continue
 
-      const defineModelModule = await import(modulePath)
+      const modelModule = await import(modulePath)
 
-      const modelClass = defineModelModule[modelName]
+      let modelClass;
+      if(isTsFile) {
+        modelClass = modelModule[modelName]
+      } else {
+        modelClass = modelModule.default;
+      }
 
       if (typeof modelClass === 'undefined' || modelClass === null) {
         console.error(`Fichero ${modulePath} no contiene clase ${modelName}, continuando...`)
         continue
       }
 
-      const model = modelClass.initModel(sqlConnection)
+      const model = isTsFile ? modelClass.initModel(sqlConnection) : modelClass.init(sqlConnection, DataTypes)
 
       // const model = await import(join(modelsPath, file))(sqlConnection, Sequelize.DataTypes)
 

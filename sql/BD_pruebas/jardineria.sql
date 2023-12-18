@@ -25,8 +25,12 @@ CREATE TABLE empleado (
   codigo_jefe INTEGER DEFAULT NULL,
   puesto VARCHAR(50) DEFAULT NULL,
   PRIMARY KEY (codigo_empleado),
-  FOREIGN KEY (codigo_oficina) REFERENCES oficina (codigo_oficina),
+  FOREIGN KEY (codigo_oficina) REFERENCES oficina (codigo_oficina)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE,
   FOREIGN KEY (codigo_jefe) REFERENCES empleado (codigo_empleado)
+    ON DELETE SET NULL
+    ON UPDATE CASCADE
 );
 
 CREATE TABLE gama_producto (
@@ -54,6 +58,8 @@ CREATE TABLE cliente (
   limite_credito NUMERIC(15,2) DEFAULT NULL,
   PRIMARY KEY (codigo_cliente),
   FOREIGN KEY (codigo_empleado_rep_ventas) REFERENCES empleado (codigo_empleado)
+    ON DELETE SET NULL
+    ON UPDATE CASCADE
 );
 
 CREATE TABLE pedido (
@@ -66,6 +72,8 @@ CREATE TABLE pedido (
   codigo_cliente INTEGER NOT NULL,
   PRIMARY KEY (codigo_pedido),
   FOREIGN KEY (codigo_cliente) REFERENCES cliente (codigo_cliente)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE
 );
 
 CREATE TABLE producto (
@@ -80,6 +88,8 @@ CREATE TABLE producto (
   precio_proveedor NUMERIC(15,2) DEFAULT NULL,
   PRIMARY KEY (codigo_producto),
   FOREIGN KEY (gama) REFERENCES gama_producto (gama)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE
 );
 
 CREATE TABLE detalle_pedido (
@@ -89,8 +99,12 @@ CREATE TABLE detalle_pedido (
   precio_unidad NUMERIC(15,2) NOT NULL,
   numero_linea SMALLINT NOT NULL,
   PRIMARY KEY (codigo_pedido, codigo_producto),
-  FOREIGN KEY (codigo_pedido) REFERENCES pedido (codigo_pedido),
+  FOREIGN KEY (codigo_pedido) REFERENCES pedido (codigo_pedido)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE,
   FOREIGN KEY (codigo_producto) REFERENCES producto (codigo_producto)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE
 );
 
 CREATE TABLE pago (
@@ -101,6 +115,8 @@ CREATE TABLE pago (
   total NUMERIC(15,2) NOT NULL,
   PRIMARY KEY (codigo_cliente, id_transaccion),
   FOREIGN KEY (codigo_cliente) REFERENCES cliente (codigo_cliente)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE
 );
 
 -- Datos

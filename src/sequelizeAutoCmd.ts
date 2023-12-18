@@ -46,6 +46,12 @@ async function executeSequelizeAuto (cmd: string, args: string[]): Promise<void>
   })
 }
 
+// Extensión del archivo actual
+const fileExtension = path.extname(filename);
+
+const isTsFile = fileExtension === '.ts';
+const lang = isTsFile ? 'ts' : 'esm';
+
 const cmd = process.platform === 'win32' ? 'npx.cmd' : 'npx'
 const args = [
   'sequelize-auto',
@@ -56,7 +62,7 @@ const args = [
   '-p', 3306,
   '-x', password,
   '-e', dialect,
-  '-l', 'ts'
+  '-l', lang
 ]
 try {
   await sqlConnection.authenticate()

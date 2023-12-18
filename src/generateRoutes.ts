@@ -23,16 +23,21 @@ export default async function generateRoutes (): Promise<void> {
     const modelName = file.replace(isTsFile ? '.ts' : '.js', '')
     if (modelName === undefined || modelName === null || modelName === '' || modelName === 'init-models') continue
 
-    const defineModelModule = await import(modulePath)
+    const modelModule = await import(modulePath)
 
-    const defineModel = defineModelModule[modelName]
+    let modelClass;
+    if(isTsFile) {
+      modelClass = modelModule[modelName]
+    } else {
+      modelClass = modelModule.default;
+    }
 
-    if (typeof defineModel === 'undefined' || defineModel === null) {
+    if (typeof modelClass === 'undefined' || modelClass === null) {
       console.error(`Fichero ${modulePath} no contiene clase ${modelName}, continuando...`)
       continue
     }
 
-    const content = generateRoutesContent(modelName) // Genera el contenido de las rutas aquí
+    const content = generateRoutesContent(modelName, isTsFile) // Genera el contenido de las rutas aquí
 
     const fileName = isTsFile ? `${modelName}.ts` : `${modelName}.js`
     const RoutesPath = path.join(dirname, 'routes')
@@ -42,15 +47,28 @@ export default async function generateRoutes (): Promise<void> {
 }
 
 // Genera el contenido de las rutas basado en el modelo
-function generateRoutesContent (modelName: string): string {
+function generateRoutesContent (modelName: string, isTsFile: boolean): string {
+
+  const modelClassString = isTsFile ? 
+  `const ${modelName}Class = defineModel_${modelName}.${modelName}`
+  :
+  `const ${modelName}Class = defineModel_${modelName}.default`
+
+  const initModelFunctionString = isTsFile ? 
+  `const ${modelName} = ${modelName}Class.initModel(sqlConnection)`
+  : 
+  `const ${modelName} = ${modelName}Class.init(sqlConnection, DataTypes)`
+
   return `
   import express from 'express'
   import { sqlConnection } from '../sqlConnection.js'
   import * as defineModel_${modelName} from '../models/${modelName}.js'
   import verificarToken from '../middleware/verificarToken.js'
+  import { DataTypes } from 'sequelize'
+
   
-  const ${modelName}Class = defineModel_${modelName}.${modelName}
-  const ${modelName} = ${modelName}Class.initModel(sqlConnection)
+  ${modelClassString}
+  ${initModelFunctionString}
   
   const router = express.Router()
   

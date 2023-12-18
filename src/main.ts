@@ -26,7 +26,7 @@ if (fs.existsSync(join(dirname, 'models'))) {
 } else {
   console.log(pc.blue('Directorio models no encontrado. Generando modelos...'))
   try {
-    await import('./sequelizeAutoCmd')
+    await import('./sequelizeAutoCmd.js')
   } catch (error) {
     console.error(error)
     process.exit(1) // Cierra la aplicacion si la generacion de modelos falla.
