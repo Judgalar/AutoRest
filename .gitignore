@@ -5,3 +5,5 @@ swagger.json
 .env
 build
 data
+.idea
+.vscode
