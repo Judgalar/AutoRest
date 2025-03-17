@@ -15,7 +15,7 @@ export default async function generateRoutes (): Promise<void> {
 
   const modelFiles = fs.readdirSync(modelsPath)
 
-  // Importar los modelos dinámicamente y crear ficheros
+  // Dynamically import models and create files
   for (const file of modelFiles) {
     const modulePath = `./models/${file}`
 
@@ -25,19 +25,19 @@ export default async function generateRoutes (): Promise<void> {
 
     const modelModule = await import(modulePath)
 
-    let modelClass;
-    if(isTsFile) {
+    let modelClass
+    if (isTsFile) {
       modelClass = modelModule[modelName]
     } else {
-      modelClass = modelModule.default;
+      modelClass = modelModule.default
     }
 
     if (typeof modelClass === 'undefined' || modelClass === null) {
-      console.error(`Fichero ${modulePath} no contiene clase ${modelName}, continuando...`)
+      console.error(`File ${modulePath} does not contain class ${modelName}, continuing...`)
       continue
     }
 
-    const content = generateRoutesContent(modelName, isTsFile) // Genera el contenido de las rutas aquí
+    const content = generateRoutesContent(modelName, isTsFile) // Generate the route content here
 
     const fileName = isTsFile ? `${modelName}.ts` : `${modelName}.js`
     const RoutesPath = path.join(dirname, 'routes')
@@ -46,24 +46,21 @@ export default async function generateRoutes (): Promise<void> {
   }
 }
 
-// Genera el contenido de las rutas basado en el modelo
+// Generate route content based on the model
 function generateRoutesContent (modelName: string, isTsFile: boolean): string {
+  const modelClassString = isTsFile
+    ? `const ${modelName}Class = defineModel_${modelName}.${modelName}`
+    : `const ${modelName}Class = defineModel_${modelName}.default`
 
-  const modelClassString = isTsFile ? 
-  `const ${modelName}Class = defineModel_${modelName}.${modelName}`
-  :
-  `const ${modelName}Class = defineModel_${modelName}.default`
-
-  const initModelFunctionString = isTsFile ? 
-  `const ${modelName} = ${modelName}Class.initModel(sqlConnection)`
-  : 
-  `const ${modelName} = ${modelName}Class.init(sqlConnection, DataTypes)`
+  const initModelFunctionString = isTsFile
+    ? `const ${modelName} = ${modelName}Class.initModel(sqlConnection)`
+    : `const ${modelName} = ${modelName}Class.init(sqlConnection, DataTypes)`
 
   return `
   import express from 'express'
   import { sqlConnection } from '../sqlConnection.js'
   import * as defineModel_${modelName} from '../models/${modelName}.js'
-  import verificarToken from '../middleware/verificarToken.js'
+  import verifyToken from '../middleware/verifyToken.js'
   import { DataTypes } from 'sequelize'
 
   
@@ -72,109 +69,109 @@ function generateRoutesContent (modelName: string, isTsFile: boolean): string {
   
   const router = express.Router()
   
-  // Ruta para obtener todos los registros
+  // Route to get all records
   router.get('/', async (req, res) => {
     try {
       const data = await ${modelName}.findAll();
       res.json(data);
     } catch (error) {
-      console.error('Error al obtener los registros de ${modelName}:', error);
-      res.status(500).json({ error: 'Error al obtener los registros' });
+      console.error('Error fetching records for ${modelName}:', error);
+      res.status(500).json({ error: 'Error fetching records' });
     }
   });
   
-  // Ruta para obtener un registro por su ID
+  // Route to get a record by its ID
   router.get('/:id', async (req, res) => {
     try {
       const { id } = req.params;
-      const registro = await ${modelName}.findByPk(id);
+      const record = await ${modelName}.findByPk(id);
   
-      if (!registro) {
-        res.status(404).json({ error: '${modelName} no encontrado' });
+      if (!record) {
+        res.status(404).json({ error: '${modelName} not found' });
       } else {
-        res.json(registro);
+        res.json(record);
       }
     } catch (error) {
-      console.error('Error al obtener el registro por ID:', error);
-      res.status(500).json({ error: 'Error al obtener el registro por ID' });
+      console.error('Error fetching record by ID:', error);
+      res.status(500).json({ error: 'Error fetching record by ID' });
     }
   });
   
-  // Ruta para crear un nuevo registro
-  router.post('/', verificarToken, async (req, res) => {
+  // Route to create a new record
+  router.post('/', verifyToken, async (req, res) => {
     try {
       const newData = req.body;
       const createdData = await ${modelName}.create(newData);
       res.status(201).json(createdData);
     } catch (error) {
-      console.error('Error al crear un registro:', error);
-      res.status(500).json({ error: 'Error al crear un registro' });
+      console.error('Error creating a record:', error);
+      res.status(500).json({ error: 'Error creating a record' });
     }
   });
   
-  // Ruta para actualizar totalmente un registro
-  router.put('/:id', verificarToken, async (req, res) => {
+  // Route to fully update a record
+  router.put('/:id', verifyToken, async (req, res) => {
     try {
       const { id } = req.params;
       const updatedData = req.body;
   
-      const registro = await ${modelName}.findByPk(id);
+      const record = await ${modelName}.findByPk(id);
   
-      if (!registro) {
-        res.status(404).json({ error: '${modelName} no encontrado' });
+      if (!record) {
+        res.status(404).json({ error: '${modelName} not found' });
       } else {
-        Object.keys(registro.dataValues).forEach(field => {
+        Object.keys(record.dataValues).forEach(field => {
           if (!updatedData.hasOwnProperty(field)) {
-            registro[field] = null;
+            record[field] = null;
           } else {
-            registro[field] = updatedData[field];
+            record[field] = updatedData[field];
           }
         });
   
-        await registro.save();
-        res.json({ message: 'Actualizado completamente' });
+        await record.save();
+        res.json({ message: 'Fully updated' });
       }
     } catch (error) {
-      console.error('Error al actualizar completamente:', error);
-      res.status(500).json({ error: 'Error interno al actualizar completamente' });
+      console.error('Error fully updating:', error);
+      res.status(500).json({ error: 'Internal error while fully updating' });
     }
   });
   
-  // Ruta para actualizar parcialmente un registro
-  router.patch('/:id', verificarToken, async (req, res) => {
+  // Route to partially update a record
+  router.patch('/:id', verifyToken, async (req, res) => {
     try {
       const { id } = req.params;
       const updatedData = req.body;
   
-      const registro = await ${modelName}.findByPk(id);
+      const record = await ${modelName}.findByPk(id);
   
-      if (!registro) {
-        res.status(404).json({ error: 'No encontrado' });
+      if (!record) {
+        res.status(404).json({ error: 'Not found' });
       } else {
-        await registro.update(updatedData);
-        res.json({ message: 'Actualizado parcialmente' });
+        await record.update(updatedData);
+        res.json({ message: 'Partially updated' });
       }
     } catch (error) {
-      console.error('Error al actualizar parcialmente:', error);
-      res.status(500).json({ error: 'Error interno al actualizar parcialmente' });
+      console.error('Error partially updating:', error);
+      res.status(500).json({ error: 'Internal error while partially updating' });
     }
   });
   
-  // Ruta para eliminar un registro
-  router.delete('/:id', verificarToken, async (req, res) => {
+  // Route to delete a record
+  router.delete('/:id', verifyToken, async (req, res) => {
     try {
       const { id } = req.params;
-      const registro = await ${modelName}.findByPk(id);
+      const record = await ${modelName}.findByPk(id);
   
-      if (!registro) {
-        res.status(404).json({ error: '${modelName} no encontrado' });
+      if (!record) {
+        res.status(404).json({ error: '${modelName} not found' });
       } else {
-        await registro.destroy();
-        res.json({ message: '${modelName} eliminado correctamente' });
+        await record.destroy();
+        res.json({ message: '${modelName} successfully deleted' });
       }
     } catch (error) {
-      console.error('Error al eliminar el registro:', error);
-      res.status(500).json({ error: 'Error al eliminar el registro' });
+      console.error('Error deleting the record:', error);
+      res.status(500).json({ error: 'Error deleting the record' });
     }
   });
   
@@ -183,9 +180,9 @@ function generateRoutesContent (modelName: string, isTsFile: boolean): string {
   `
 }
 
-// Función para crear un archivo en una ubicación
+// Function to create a file at a location
 function createFile (directory: string, fileName: string, content: string): void {
   const filePath = path.join(directory, fileName)
   fs.writeFileSync(filePath, content)
-  console.log(`Archivo ${filePath} creado.`)
+  console.log(`File ${filePath} created.`)
 }

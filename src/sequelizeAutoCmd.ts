@@ -1,20 +1,21 @@
 import { spawn } from 'child_process'
-import fs from 'fs'
 import { fileURLToPath } from 'url'
 import path from 'path'
 import pc from 'picocolors'
 import { sqlConnection } from './sqlConnection.js'
+import dotenv from 'dotenv'
+
+dotenv.config()
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
 
-const jsonConfig = fs.readFileSync(path.join(dirname, 'config.json'), 'utf-8')
-if (jsonConfig === null) {
-  throw new Error('No se pudo leer la configuración desde el archivo JSON.')
-}
-const config = JSON.parse(jsonConfig)
+// Use environment variables instead
+const { DB_NAME: name, DB_USER: user, DB_PASSWORD: password, DB_HOST: host, DB_PORT: port = '3306', DB_DIALECT: dialect } = process.env
 
-const { name, user, password, host, dialect } = config.database
+if ((name == null) || (user == null) || (password == null) || (host == null) || (dialect == null)) {
+  throw new Error('Missing required database environment variables.')
+}
 
 const output = path.join(dirname, 'models')
 
@@ -31,7 +32,7 @@ async function executeSequelizeAuto (cmd: string, args: string[]): Promise<void>
     })
 
     sequelizeAuto.on('close', (code) => {
-      console.log(`child process exited with code ${code}`)
+      console.log(`Child process exited with code ${code}`)
       if (code === 0) {
         resolve()
       } else {
@@ -46,20 +47,20 @@ async function executeSequelizeAuto (cmd: string, args: string[]): Promise<void>
   })
 }
 
-// Extensión del archivo actual
-const fileExtension = path.extname(filename);
+// Current file extension
+const fileExtension = path.extname(filename)
 
-const isTsFile = fileExtension === '.ts';
-const lang = isTsFile ? 'ts' : 'esm';
+const isTsFile = fileExtension === '.ts'
+const lang = isTsFile ? 'ts' : 'esm'
 
 const cmd = process.platform === 'win32' ? 'npx.cmd' : 'npx'
-const args = [
+const args: string[] = [
   'sequelize-auto',
   '-o', output,
   '-d', name,
   '-h', host,
   '-u', user,
-  '-p', 3306,
+  '-p', port,
   '-x', password,
   '-e', dialect,
   '-l', lang

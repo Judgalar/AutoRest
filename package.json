@@ -1,5 +1,5 @@
 {
-  "name": "autoapi",
+  "name": "autorest",
   "version": "1.0.0",
   "description": "",
   "main": "main.js",
@@ -8,20 +8,19 @@
     "build": "tsc && copyfiles -u 1 src/**/*.json build",
     "start": "node build/main.js",
     "dev": "tsx src/main.ts",
-    "clearbuild": "rimraf build",
-    "clear": "rimraf src/models src/routes src/swagger.json",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "clear": "rimraf src/models src/routes src/swagger.json"
   },
   "keywords": [],
   "author": "Judgalar",
   "license": "ISC",
   "type": "module",
   "dependencies": {
+    "@azure/msal-node": "^3.3.0",
     "bcrypt": "^5.1.1",
     "compression": "^1.7.4",
     "cookie-parser": "^1.4.6",
     "cors": "^2.8.5",
-    "dotenv": "^16.3.1",
+    "dotenv": "^16.4.7",
     "express": "^4.18.2",
     "jsonwebtoken": "^9.0.2",
     "module-alias": "^2.2.3",
@@ -35,7 +34,7 @@
     "sqlite3": "^5.1.6",
     "swagger-autogen": "^2.23.7",
     "swagger-ui-express": "^5.0.0",
-    "tedious": "^16.6.1",
+    "tedious": "^18.6.1",
     "xml-js": "^1.6.11"
   },
   "devDependencies": {

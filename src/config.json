@@ -1,9 +1,0 @@
-{
-    "database": {
-        "name": "jardineria",
-        "user": "root",
-        "password": "",
-        "host": "localhost",
-        "dialect": "mysql"
-    }
-}

@@ -1,4 +1,4 @@
-# AutoApi
+# AutoRest
 
 TFG desarrollado en **Node.js** con **TypeScript** que permite crear automáticamente una API RESTful a partir de una base de datos SQL. Este proyecto automatiza la creación de endpoints para interactuar con bases de datos sin necesidad de escribir manualmente las rutas y controladores, lo que ahorra tiempo en el desarrollo de aplicaciones.
 

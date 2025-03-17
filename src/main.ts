@@ -14,7 +14,17 @@ import { sqlConnection } from './sqlConnection.js'
 import generateRoutes from './generateRoutes.js'
 import generateSwagger from './swagger.js'
 
-import authRouter from './auth/auth.js'
+import authRouter from './auth/router.js'
+import sequelizeAuth from './auth/database.js'
+
+void (async () => {
+  try {
+    await sequelizeAuth.sync() // Create DB if not exists
+    console.log('✅ Database ready in "data/auth.db"')
+  } catch (error) {
+    console.error('❌ Error synchronizing database:', error)
+  }
+})()
 
 await sqlConnection.authenticate()
 
@@ -22,38 +32,38 @@ const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
 
 if (fs.existsSync(join(dirname, 'models'))) {
-  console.log('Directorio models encontrado')
+  console.log('Models directory found')
 } else {
-  console.log(pc.blue('Directorio models no encontrado. Generando modelos...'))
+  console.log(pc.blue('Models directory not found. Generating models...'))
   try {
     await import('./sequelizeAutoCmd.js')
   } catch (error) {
     console.error(error)
-    process.exit(1) // Cierra la aplicacion si la generacion de modelos falla.
+    process.exit(1) // Closes the application if model generation fails.
   }
 }
 
 if (fs.existsSync(join(dirname, 'routes'))) {
-  console.log('Directorio Routes encontrado')
+  console.log('Routes directory found')
 } else {
-  console.log(pc.blue('Directorio routes no encontrado. Generando rutas...'))
+  console.log(pc.blue('Routes directory not found. Generating routes...'))
   try {
     await generateRoutes()
   } catch (error) {
     console.error(error)
-    process.exit(1) // Cierra la aplicacion si la generacion de modelos falla.
+    process.exit(1) // Closes the application if route generation fails.
   }
 }
 
 if (fs.existsSync(join(dirname, 'swagger.json'))) {
-  console.log('swagger.json encontrado')
+  console.log('swagger.json found')
 } else {
-  console.log(pc.blue('Documento swagger no encontrado. Generando swagger.json...'))
+  console.log(pc.blue('Swagger document not found. Generating swagger.json...'))
   try {
     await generateSwagger()
   } catch (error) {
     console.error(error)
-    process.exit(1) // Cierra la aplicacion si la generacion de modelos falla.
+    process.exit(1) // Closes the application if swagger generation fails.
   }
 }
 
@@ -61,35 +71,35 @@ const app = express()
 
 // MIDDLEWARE
 
-// Permite solicitudes de origen cruzado (Cross-Origin Resource Sharing) y te ayuda a controlar las políticas de acceso a tu API.
+// Allows cross-origin requests (Cross-Origin Resource Sharing) and helps control access policies for your API.
 app.use(cors())
 
-// Comprime las respuestas enviadas desde el servidor para reducir el tamaño de los datos transferidos y mejorar el rendimiento.
+// Compresses responses sent from the server to reduce data size and improve performance.
 app.use(compression())
 
-// Registra los registros de solicitud HTTP para ayudarte a depurar y monitorear tus solicitudes entrantes
+// Logs HTTP request records to help debug and monitor incoming requests.
 app.use(morgan('dev'))
 
-// Middleware para análisis de JSON y URL-encoded
+// Middleware for JSON and URL-encoded parsing
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
 
-// Analiza y administra las cookies de las solicitudes
+// Parses and manages cookies from requests
 app.use(cookieParser())
 
-// Middleware para registro de solicitudes
-app.use((req, res, next) => {
-  console.log('Solicitud recibida:', req.method, req.url)
+// Middleware for request logging
+app.use((req, _res, next) => {
+  console.log('Request received:', req.method, req.url)
   next()
 })
 
 app.use('/auth', authRouter)
 
-// RUTAS DINÁMICAS
+// DYNAMIC ROUTES
 const routesPath = join(dirname, 'routes')
 const routeFiles = fs.readdirSync(routesPath)
 
-console.log('Creando rutas dinámicas')
+console.log('Creating dynamic routes')
 
 for (const routeFile of routeFiles) {
   const routeName = path.parse(routeFile).name
@@ -103,21 +113,21 @@ for (const routeFile of routeFiles) {
 }
 
 if (useSwaggerUI) {
-  // Ruta al archivo JSON de Swagger
+  // Path to the Swagger JSON file
   const swaggerFilePath = path.join(dirname, 'swagger.json')
 
-  // Leer el archivo JSON de Swagger
+  // Read the Swagger JSON file
   try {
     const jsonSwagger = fs.readFileSync(swaggerFilePath, 'utf-8')
-    const swaggerDocument = JSON.parse(jsonSwagger)
-    // Configurar Swagger UI
+    const swaggerDocument: swaggerUI.JsonObject = JSON.parse(jsonSwagger)
+    // Configure Swagger UI
     app.use('/', swaggerUI.serve, swaggerUI.setup(swaggerDocument))
   } catch (error) {
-    console.error('Error al leer el archivo JSON de Swagger:', error)
-    process.exit(1) // Termina la aplicación en caso de error
+    console.error('Error reading the Swagger JSON file:', error)
+    process.exit(1) // Terminates the application in case of error
   }
 }
 
 app.listen(port, () => {
-  console.log(pc.green(` Servidor iniciado en el puerto ${port} `))
+  console.log(pc.green(` Server started on port ${port} `))
 })

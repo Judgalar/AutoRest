@@ -2,27 +2,20 @@ import jwt from 'jsonwebtoken'
 import { type Request, type Response } from 'express'
 import bcrypt from 'bcrypt'
 
-import { users } from '../../auth/models.js'
+import User from '../entities/User.js'
 
 export const secretKey = 'SecretKey'
 
-// Define the interface for the user model
-interface User {
-  id: number
-  username: string
-  password: string
-}
-
 const verifyCredentials = async (username: string, password: string): Promise<number | null> => {
   try {
-    const user = await users.findOne({ where: { username } })
+    const user = await User.findOne({ where: { username } })
 
     if (user === null) {
       return null
     }
 
     // Transform the user into a simple object
-    const foundUser: User = user.get() as User
+    const foundUser = user
 
     const passwordMatch = await bcrypt.compare(password, foundUser.password)
 

@@ -4,3 +4,4 @@ routes
 swagger.json
 .env
 build
+data

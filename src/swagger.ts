@@ -7,43 +7,72 @@ import { port } from './constants.js'
 import { sqlConnection } from './sqlConnection.js'
 import { type Dialect } from 'sequelize/types'
 import { DataTypes } from 'sequelize'
+import dotenv from 'dotenv'
+
+dotenv.config()
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
 
-// Rutas de archivos y configuraciones
-const configPath = path.join(dirname, 'config.json')
-// Cargar configuración
-const jsonConfig = fs.readFileSync(configPath, 'utf-8')
-const config = JSON.parse(jsonConfig)
-
-if (config === null) {
-  throw new Error('No se pudo leer la configuración desde el archivo JSON.')
+// Load configuration from .env
+const database = {
+  name:
+    process.env.DB_NAME ??
+    (() => {
+      throw new Error('DB_NAME is not defined in environment variables.')
+    })(),
+  user:
+    process.env.DB_USER ??
+    (() => {
+      throw new Error('DB_USER is not defined in environment variables.')
+    })(),
+  password:
+    process.env.DB_PASSWORD ??
+    (() => {
+      throw new Error('DB_PASSWORD is not defined in environment variables.')
+    })(),
+  host:
+    process.env.DB_HOST ??
+    (() => {
+      throw new Error('DB_HOST is not defined in environment variables.')
+    })(),
+  dialect:
+    (process.env.DB_DIALECT as Dialect) ??
+    (() => {
+      throw new Error('DB_DIALECT is not defined in environment variables.')
+    })()
 }
 
-
-const database = config.database as {
-  name: string
-  user: string
-  password: string
-  host: string
-  dialect: Dialect
+if (
+  database.name === undefined ||
+  database.name === '' ||
+  database.user === undefined ||
+  database.user === '' ||
+  database.password === undefined ||
+  database.host === undefined ||
+  database.host === '' ||
+  database.dialect === undefined ||
+  database.dialect === null
+) {
+  throw new Error(
+    'Missing required database configuration in environment variables.'
+  )
 }
 
 const doc = {
   info: {
-    version: '', // por defecto: '1.0.0'
+    version: '', // default: '1.0.0'
     title: `${database.name}`,
-    description: 'API REST generada automáticamente'
+    description: 'Automatically generated REST API'
   },
   servers: [
     {
       url: `http://${database.host}:${port}`
     }
   ],
-  consumes: [], // por defecto: ['application/json']
-  produces: [], // por defecto: ['application/json']
-  tags: [], // por defecto: array vacio
+  consumes: [], // default: ['application/json']
+  produces: [], // default: ['application/json']
+  tags: [], // default: empty array
   securityDefinitions: {
     bearerAuth: {
       type: 'http',
@@ -59,23 +88,23 @@ const doc = {
 const swaggerFilePath = path.join(dirname, 'swagger.json')
 const endpointsFiles = ['./main']
 
-// Generar la documentación Swagger
+// Generate Swagger documentation
 export default async function generateSwagger (): Promise<void> {
   try {
     await swaggerAutogen({ openapi: '3.1.0' })(swaggerFilePath, endpointsFiles, doc)
 
-    // Leer el archivo Swagger generado
+    // Read the generated Swagger file
     const jsonData = fs.readFileSync(swaggerFilePath, 'utf-8')
     const swaggerDocument = JSON.parse(jsonData)
 
-    // Obtener lista de archivos de modelos
+    // Get list of model files
     const modelsPath = path.join(dirname, 'models')
     const modelFiles = fs.readdirSync(modelsPath)
 
-    swaggerDocument.paths['/auth/registro'] = {
+    swaggerDocument.paths['/auth/signup'] = {
       post: {
-        tags: ['Registro'],
-        description: 'Registrar usuario de la API',
+        tags: ['Sign Up'],
+        description: 'Register API user',
         requestBody: {
           content: {
             'application/json': {
@@ -98,10 +127,10 @@ export default async function generateSwagger (): Promise<void> {
             description: 'OK'
           },
           409: {
-            description: 'El usuario ya existe'
+            description: 'User already exists'
           },
           500: {
-            description: 'Error al crear el registro'
+            description: 'Error creating the record'
           }
         }
       }
@@ -109,8 +138,8 @@ export default async function generateSwagger (): Promise<void> {
 
     swaggerDocument.paths['/auth/token'] = {
       post: {
-        tags: ['GenerarToken'],
-        description: 'Generar un token para un usuario autenticado',
+        tags: ['GenerateToken'],
+        description: 'Generate a token for an authenticated user',
         requestBody: {
           content: {
             'application/json': {
@@ -131,7 +160,7 @@ export default async function generateSwagger (): Promise<void> {
         },
         responses: {
           200: {
-            description: 'Token generado exitosamente',
+            description: 'Token successfully generated',
             content: {
               'application/json': {
                 example: {
@@ -141,10 +170,10 @@ export default async function generateSwagger (): Promise<void> {
             }
           },
           401: {
-            description: 'Credenciales incorrectas'
+            description: 'Incorrect credentials'
           },
           500: {
-            description: 'Error interno del servidor'
+            description: 'Internal server error'
           }
         }
       }
@@ -159,23 +188,21 @@ export default async function generateSwagger (): Promise<void> {
 
       const modelModule = await import(modulePath)
 
-      let modelClass;
-      if(isTsFile) {
+      let modelClass
+      if (isTsFile) {
         modelClass = modelModule[modelName]
       } else {
-        modelClass = modelModule.default;
+        modelClass = modelModule.default
       }
 
       if (typeof modelClass === 'undefined' || modelClass === null) {
-        console.error(`Fichero ${modulePath} no contiene clase ${modelName}, continuando...`)
+        console.error(`File ${modulePath} does not contain class ${modelName}, continuing...`)
         continue
       }
 
       const model = isTsFile ? modelClass.initModel(sqlConnection) : modelClass.init(sqlConnection, DataTypes)
 
-      // const model = await import(join(modelsPath, file))(sqlConnection, Sequelize.DataTypes)
-
-      // Generar el esquema del modelo dinámicamente
+      // Generate the model schema dynamically
       const modelAttributes = model.rawAttributes
       const modelSchema: {
         type: string
@@ -192,15 +219,15 @@ export default async function generateSwagger (): Promise<void> {
         }
       }
 
-      const primaryKeyType = getPrimaryKeyType(modelClass);
+      const primaryKeyType = getPrimaryKeyType(modelClass)
 
-      // Agregar el esquema del modelo a components/schemas
+      // Add the model schema to components/schemas
       swaggerDocument.components.schemas[modelName] = modelSchema
 
       swaggerDocument.paths[`/${modelName}`] = {
         get: {
           tags: [modelName],
-          description: `Obtener todos los registros de ${modelName}`,
+          description: `Get all records of ${modelName}`,
           produces: ['application/json'],
           responses: {
             200: {
@@ -217,13 +244,13 @@ export default async function generateSwagger (): Promise<void> {
               }
             },
             500: {
-              description: `Error al obtener los registros de ${modelName}`
+              description: `Error retrieving records of ${modelName}`
             }
           }
         },
         post: {
           tags: [modelName],
-          description: `Crea un nuevo registro de ${modelName}`,
+          description: `Create a new record of ${modelName}`,
           requestBody: {
             content: {
               'application/json': {
@@ -235,7 +262,7 @@ export default async function generateSwagger (): Promise<void> {
           },
           responses: {
             201: {
-              description: `Registro de ${modelName} creado correctamente`,
+              description: `${modelName} record created successfully`,
               content: {
                 'application/json': {
                   schema: {
@@ -245,7 +272,7 @@ export default async function generateSwagger (): Promise<void> {
               }
             },
             500: {
-              description: `Error al crear el registro de ${modelName}`
+              description: `Error creating ${modelName} record`
             }
           },
           security: [
@@ -259,13 +286,13 @@ export default async function generateSwagger (): Promise<void> {
       swaggerDocument.paths[`/${modelName}/{pk}`] = {
         get: {
           tags: [modelName],
-          description: `Obtiene un registro de ${modelName} por su PrimaryKey`,
+          description: `Get a ${modelName} record by its PrimaryKey`,
           parameters: [
             {
               name: 'pk',
               in: 'path',
               required: true,
-              description: 'PrimaryKey del registro',
+              description: 'PrimaryKey of the record',
               schema: {
                 type: primaryKeyType
               }
@@ -273,7 +300,7 @@ export default async function generateSwagger (): Promise<void> {
           ],
           responses: {
             200: {
-              description: `Registro de ${modelName} encontrado`,
+              description: `${modelName} record found`,
               content: {
                 'application/json': {
                   schema: {
@@ -283,22 +310,22 @@ export default async function generateSwagger (): Promise<void> {
               }
             },
             404: {
-              description: `No se encontró el registro de ${modelName}`
+              description: `${modelName} record not found`
             },
             500: {
-              description: `Error al obtener el registro de ${modelName}`
+              description: `Error retrieving ${modelName} record`
             }
           }
         },
         put: {
           tags: [modelName],
-          description: `Actualiza un registro de ${modelName} por su PrimaryKey`,
+          description: `Update a ${modelName} record by its PrimaryKey`,
           parameters: [
             {
               name: 'pk',
               in: 'path',
               required: true,
-              description: 'PrimaryKey del registro',
+              description: 'PrimaryKey of the record',
               schema: {
                 type: primaryKeyType
               }
@@ -316,13 +343,13 @@ export default async function generateSwagger (): Promise<void> {
           },
           responses: {
             200: {
-              description: `Registro de ${modelName} actualizado correctamente`
+              description: `${modelName} record updated successfully`
             },
             404: {
-              description: `No se encontró el registro de ${modelName}`
+              description: `${modelName} record not found`
             },
             500: {
-              description: `Error al actualizar el registro de ${modelName}`
+              description: `Error updating ${modelName} record`
             }
           },
           security: [
@@ -333,13 +360,13 @@ export default async function generateSwagger (): Promise<void> {
         },
         patch: {
           tags: [modelName],
-          description: `Actualiza parcialmente un registro de ${modelName} por su PrimaryKey`,
+          description: `Partially update a ${modelName} record by its PrimaryKey`,
           parameters: [
             {
               name: 'pk',
               in: 'path',
               required: true,
-              description: 'PrimaryKey del registro',
+              description: 'PrimaryKey of the record',
               schema: {
                 type: primaryKeyType
               }
@@ -357,13 +384,13 @@ export default async function generateSwagger (): Promise<void> {
           },
           responses: {
             200: {
-              description: `Registro de ${modelName} actualizado correctamente`
+              description: `${modelName} record partially updated`
             },
             404: {
-              description: `No se encontró el registro de ${modelName}`
+              description: `${modelName} record not found`
             },
             500: {
-              description: `Error al actualizar parcialmente el registro de ${modelName}`
+              description: `Error partially updating ${modelName} record`
             }
           },
           security: [
@@ -374,13 +401,13 @@ export default async function generateSwagger (): Promise<void> {
         },
         delete: {
           tags: [modelName],
-          description: `Elimina un registro de ${modelName} por su PrimaryKey`,
+          description: `Delete a ${modelName} record by its PrimaryKey`,
           parameters: [
             {
               name: 'pk',
               in: 'path',
               required: true,
-              description: 'PrimaryKey del registro',
+              description: 'PrimaryKey of the record',
               schema: {
                 type: primaryKeyType
               }
@@ -388,13 +415,13 @@ export default async function generateSwagger (): Promise<void> {
           ],
           responses: {
             200: {
-              description: `Registro de ${modelName} eliminado correctamente`
+              description: `${modelName} record deleted successfully`
             },
             404: {
-              description: `No se encontró el registro de ${modelName}`
+              description: `${modelName} record not found`
             },
             500: {
-              description: `Error al eliminar el registro de ${modelName}`
+              description: `Error deleting ${modelName} record`
             }
           },
           security: [
@@ -406,26 +433,26 @@ export default async function generateSwagger (): Promise<void> {
       }
     }
 
-    // Convertir el objeto swaggerDocument de vuelta a una cadena JSON
-    const jsonModificado = JSON.stringify(swaggerDocument, null, 2)
-    // Escribir la cadena JSON modificada en el archivo swagger.json
-    fs.writeFileSync(swaggerFilePath, jsonModificado)
+    // Convert the swaggerDocument object back to a JSON string
+    const modifiedJson = JSON.stringify(swaggerDocument, null, 2)
+    // Write the modified JSON string to the swagger.json file
+    fs.writeFileSync(swaggerFilePath, modifiedJson)
 
-    console.log(pc.green('Fichero Swagger.json generado correctamente'))
+    console.log(pc.green('Swagger.json file generated successfully'))
   } catch (error) {
-    console.error('Error al generar la documentación Swagger:', error)
+    console.error('Error generating Swagger documentation:', error)
   }
 }
 
-function getPrimaryKeyType(modelClass: any) {
-  const primaryKeyField = Object.keys(modelClass.rawAttributes).find(
+function getPrimaryKeyType (modelClass: any): string {
+  const primaryKeyField = Object.keys(modelClass.rawAttributes as Record<string, any>).find(
     (fieldName) => modelClass.rawAttributes[fieldName].primaryKey
-  );
+  )
 
-  if (primaryKeyField) {
-    return modelClass.rawAttributes[primaryKeyField].type.key.toLowerCase();
+  if (primaryKeyField !== null && primaryKeyField !== undefined) {
+    return modelClass.rawAttributes[primaryKeyField].type.key.toLowerCase()
   }
 
-  // Manejo de errores si no se encuentra la clave primaria
-  throw new Error(`No se encontró la clave primaria en el modelo ${modelClass.name}`);
+  // Error handling if the primary key is not found
+  throw new Error(`Primary key not found in model ${modelClass.name}`)
 }

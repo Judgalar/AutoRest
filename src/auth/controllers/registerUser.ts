@@ -1,14 +1,7 @@
 import { type Request, type Response } from 'express'
 import bcrypt from 'bcrypt'
 
-import { users } from '../../auth/models.js'
-
-// Define the interface for the user model
-interface User {
-  id: number
-  username: string
-  password: string
-}
+import User from '../entities/User.js'
 
 export default function registerUser (req: Request, res: Response): void {
   const { username, password } = req.body
@@ -67,17 +60,7 @@ export default function registerUser (req: Request, res: Response): void {
 
 const findUser = async (username: string): Promise<User | null> => {
   try {
-    // Search for the user in the database
-    const user = await users.findOne({ where: { username } })
-
-    if (user === null) {
-      return null
-    }
-
-    // Transform the user into a simple object
-    const foundUser: User = user.get() as User
-
-    return foundUser
+    return await User.findOne({ where: { username } })
   } catch (error) {
     console.error('Error while searching for user:', error)
     throw new Error('Server error')
@@ -94,7 +77,7 @@ const createUser = async (username: string, password: string): Promise<void> => 
     const hashedPassword = await bcrypt.hash(password, salt)
 
     // Perform the registration operation in the database using create
-    await users.create({ username, password: hashedPassword })
+    await User.create({ username, password: hashedPassword })
     console.log('User registered successfully')
   } catch (error) {
     console.error('Error while registering user:', error)
